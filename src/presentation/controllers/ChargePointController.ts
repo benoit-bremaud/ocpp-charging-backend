@@ -1,4 +1,11 @@
-import { Controller, Get, Param, HttpCode } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Param, 
+  HttpCode, 
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 
 import { SelectChargePoint } from '../../application/use-cases/SelectChargePoint';
 import { ChargePoint } from '../../domain/entities/ChargePoint.entity';
@@ -24,6 +31,7 @@ export class ChargePointController {
    * @param chargePointId - Business identifier (e.g., "CP-001")
    * @returns ChargePoint entity
    * @throws NotFoundException if ChargePoint not found
+   * @throws BadRequestException if input invalid
    *
    * HTTP:
    * - 200 OK: ChargePoint found and returned
@@ -35,10 +43,25 @@ export class ChargePointController {
   async getChargePointById(
     @Param('chargePointId') chargePointId: string,
   ): Promise<ChargePoint> {
-    /**
-     * Delegate to application use-case.
-     * Use-case handles all business logic and validation.
-     */
-    return this.selectChargePointUseCase.execute(chargePointId);
+    try {
+      /**
+       * Delegate to application use-case.
+       * Use-case handles all business logic and validation.
+       */
+      return await this.selectChargePointUseCase.execute(chargePointId);
+    } catch (error) {
+      // Handle empty input
+      if (error instanceof Error && error.message.includes('must not be empty')) {
+        throw new BadRequestException('chargePointId must not be empty');
+      }
+
+      // Handle not found
+      if (error instanceof Error && error.message.includes('not found')) {
+        throw new NotFoundException(error.message);
+      }
+
+      // Re-throw unexpected errors
+      throw error;
+    }
   }
 }
