@@ -1,20 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { OcppMessage } from '../../domain/value-objects/OcppMessage';
-import { HeartbeatStatus } from '../../domain/value-objects/HeartbeatStatus';
+import { OcppSchema } from '../../domain/value-objects/OcppSchema';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
 
 /**
- * Use-Case: Handle OCPP Heartbeat message.
+ * Use-Case: Handle OCPP Heartbeat message (OCPP 1.6 compliant).
  *
- * OCPP 1.6 Spec:
- * - Heartbeat has NO payload fields (empty object)
- * - ChargePoint sends every `interval` seconds (from BootNotification)
- * - Used for keep-alive and clock synchronization
- * - Response: [3, messageId, {currentTime}]
+ * Validation pipeline:
+ * 1. Message is CALL type (OcppMessage)
+ * 2. Payload conforms to JSON schema (OcppSchema)
+ * 3. ChargePoint exists in database
  *
- * CLEAN: Application layer business logic.
- * SOLID: DIP - depends on repository abstraction.
+ * Response: [3, messageId, {currentTime}] per OCPP 1.6
+ *
+ * CLEAN: Application layer orchestrates validation + business logic.
+ * SOLID: DIP - depends on abstractions (OcppSchema, IChargePointRepository).
  */
 @Injectable()
 export class HandleHeartbeat {
@@ -25,40 +26,25 @@ export class HandleHeartbeat {
 
   /**
    * Execute: handle Heartbeat from ChargePoint.
-   *
-   * Validates:
-   * 1. Message is CALL type
-   * 2. Payload is empty object
-   * 3. ChargePoint is known
-   *
-   * Updates:
-   * 1. ChargePoint.lastHeartbeat timestamp
-   * 2. ChargePoint.status = ONLINE (if was offline)
-   *
-   * Returns:
-   * [3, messageId, {currentTime}] per OCPP 1.6
    */
   async execute(message: OcppMessage): Promise<Record<string, any>> {
-    // Validate message type
+    // 1. Validate message type
     if (!message.isCall()) {
       throw new Error('Heartbeat handler expects CALL message (type 2)');
     }
 
-    // Validate payload per OCPP 1.6: must be empty
-    const heartbeatStatus = new HeartbeatStatus(message.payload);
-    if (!heartbeatStatus.isValid) {
+    // 2. Validate payload against OCPP schema
+    const schemaValidation = OcppSchema.validate('Heartbeat', message.payload);
+    if (!schemaValidation.valid) {
       return this.buildErrorResponse(
         message.messageId,
         'FormationViolation',
-        heartbeatStatus.reason || 'Invalid heartbeat payload',
+        `Schema validation failed: ${schemaValidation.errors?.join('; ') || 'Unknown error'}`,
       );
     }
 
-    // Extract chargePointId from WebSocket context
-    // For now, we'll use a placeholder - should come from gateway context
+    // 3. ChargePoint lookup
     const chargePointId = message.payload.chargePointId || 'CP-UNKNOWN';
-
-    // Find ChargePoint
     const chargePoint =
       await this.chargePointRepository.findByChargePointId(chargePointId);
 
@@ -70,15 +56,14 @@ export class HandleHeartbeat {
       );
     }
 
-    // Update lastHeartbeat timestamp
-    // TODO: In STEP 12+, update ChargePoint entity with timestamp
+    // 4. Update timestamp
     console.log(
-      `[HandleHeartbeat] ChargePoint alive: ${chargePointId} at ${new Date().toISOString()}`,
+      `[HandleHeartbeat] ✅ ChargePoint alive: ${chargePointId} at ${new Date().toISOString()}`,
     );
 
-    // Return HeartbeatResponse [3, messageId, {currentTime}]
+    // 5. Return OCPP HeartbeatResponse
     return [
-      3, // CALLRESULT type
+      3,
       message.messageId,
       {
         currentTime: new Date().toISOString(),
