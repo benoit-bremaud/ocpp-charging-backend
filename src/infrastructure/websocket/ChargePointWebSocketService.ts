@@ -4,10 +4,8 @@ import { IChargePointRepository } from '../../domain/repositories/IChargePointRe
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../tokens';
 
 /**
- * Application Layer: WebSocket service orchestrating gateway + repository.
- *
- * CLEAN: Service = business logic for real-time updates.
- * SOLID: Depends on gateway (infrastructure) + IChargePointRepository (domain).
+ * Application Layer: WebSocket service (DISABLED for now).
+ * Will route OCPP messages via REST endpoints instead.
  */
 @Injectable()
 export class ChargePointWebSocketService {
@@ -17,9 +15,6 @@ export class ChargePointWebSocketService {
     private readonly chargePointRepository: IChargePointRepository,
   ) {}
 
-  /**
-   * Broadcast that a ChargePoint came online.
-   */
   async notifyChargePointOnline(chargePointId: string): Promise<void> {
     const chargePoint =
       await this.chargePointRepository.findByChargePointId(chargePointId);
@@ -29,13 +24,9 @@ export class ChargePointWebSocketService {
         chargePointId,
         'ONLINE',
       );
-      console.log(`[WebSocketService] ChargePoint online: ${chargePointId}`);
     }
   }
 
-  /**
-   * Broadcast that a ChargePoint went offline.
-   */
   async notifyChargePointOffline(chargePointId: string): Promise<void> {
     const chargePoint =
       await this.chargePointRepository.findByChargePointId(chargePointId);
@@ -45,20 +36,13 @@ export class ChargePointWebSocketService {
         chargePointId,
         'OFFLINE',
       );
-      console.log(`[WebSocketService] ChargePoint offline: ${chargePointId}`);
     }
   }
 
-  /**
-   * Get all currently connected ChargePoints.
-   */
   getConnectedChargePoints(): string[] {
     return this.chargePointGateway.getConnectedChargePoints();
   }
 
-  /**
-   * Send OCPP command to ChargePoint.
-   */
   sendCommandToChargePoint(chargePointId: string, command: any): void {
     this.chargePointGateway.sendToChargePoint(chargePointId, command);
   }

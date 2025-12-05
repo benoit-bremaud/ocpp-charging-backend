@@ -26,30 +26,20 @@ export class UpdateChargePoint {
    *
    * @throws Error if chargePointId not found.
    */
-  async execute(
-    chargePointId: string,
-    input: UpdateChargePointInput,
-  ): Promise<ChargePoint> {
+  async execute(chargePointId: string, input: UpdateChargePointInput): Promise<ChargePoint> {
     if (!chargePointId || chargePointId.trim().length === 0) {
       throw new Error('chargePointId must not be empty');
     }
 
-    const existing = await this.chargePointRepository.findByChargePointId(
-      chargePointId,
-    );
+    const existing = await this.chargePointRepository.findByChargePointId(chargePointId);
 
     if (!existing) {
-      throw new Error(
-        `ChargePoint with chargePointId="${chargePointId}" not found`,
-      );
+      throw new Error(`ChargePoint with chargePointId="${chargePointId}" not found`);
     }
 
     const updateData = toChargePointEntityDataForUpdate(input);
 
-    const updated = await this.chargePointRepository.update(
-      existing.id,
-      updateData,
-    );
+    const updated = await this.chargePointRepository.update(existing.id, updateData);
 
     return updated;
   }

@@ -26,11 +26,7 @@ export class OcppMessage {
     this.timestamp = new Date();
   }
 
-  private validate(
-    messageTypeId: number,
-    messageId: string,
-    action: string,
-  ): void {
+  private validate(messageTypeId: number, messageId: string, action: string): void {
     if (![2, 3, 4].includes(messageTypeId)) {
       throw new Error(
         `Invalid OCPP messageTypeId: ${messageTypeId}. Must be 2 (CALL), 3 (CALLRESULT), or 4 (CALLERROR)`,

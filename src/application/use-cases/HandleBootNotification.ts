@@ -32,27 +32,18 @@ export class HandleBootNotification {
     const { chargePointId } = message.payload;
 
     if (!chargePointId) {
-      return this.buildErrorResponse(
-        message.messageId,
-        'MissingChargePointId',
-      );
+      return this.buildErrorResponse(message.messageId, 'MissingChargePointId');
     }
 
     // Find or create ChargePoint (for now, just find)
-    const chargePoint =
-      await this.chargePointRepository.findByChargePointId(chargePointId);
+    const chargePoint = await this.chargePointRepository.findByChargePointId(chargePointId);
 
     if (!chargePoint) {
-      return this.buildErrorResponse(
-        message.messageId,
-        'ChargePointNotFound',
-      );
+      return this.buildErrorResponse(message.messageId, 'ChargePointNotFound');
     }
 
     // Mark as ONLINE (update would go here in real implementation)
-    console.log(
-      `[HandleBootNotification] ChargePoint online: ${chargePointId}`,
-    );
+    console.log(`[HandleBootNotification] ChargePoint online: ${chargePointId}`);
 
     // Return BootNotificationResponse [3, messageId, response]
     return [
@@ -69,15 +60,7 @@ export class HandleBootNotification {
   /**
    * Build error response.
    */
-  private buildErrorResponse(
-    messageId: string,
-    errorCode: string,
-  ): Record<string, any> {
-    return [
-      4,
-      messageId,
-      errorCode,
-      `BootNotification failed: ${errorCode}`,
-    ];
+  private buildErrorResponse(messageId: string, errorCode: string): Record<string, any> {
+    return [4, messageId, errorCode, `BootNotification failed: ${errorCode}`];
   }
 }

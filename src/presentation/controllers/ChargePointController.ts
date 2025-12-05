@@ -49,9 +49,7 @@ export class ChargePointController {
    */
   @Get(':chargePointId')
   @HttpCode(HttpStatus.OK)
-  async getChargePointById(
-    @Param('chargePointId') chargePointId: string,
-  ): Promise<ChargePoint> {
+  async getChargePointById(@Param('chargePointId') chargePointId: string): Promise<ChargePoint> {
     try {
       return await this.selectChargePointUseCase.execute(chargePointId);
     } catch (error) {
@@ -73,9 +71,7 @@ export class ChargePointController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createChargePoint(
-    @Body() body: CreateChargePointInput,
-  ): Promise<ChargePoint> {
+  async createChargePoint(@Body() body: CreateChargePointInput): Promise<ChargePoint> {
     try {
       return await this.createChargePointUseCase.execute(body);
     } catch (error) {

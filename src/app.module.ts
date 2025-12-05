@@ -33,8 +33,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getTypeOrmConfig(configService),
+      useFactory: (configService: ConfigService) => getTypeOrmConfig(configService),
     }),
     TypeOrmModule.forFeature([ChargePoint]),
   ],

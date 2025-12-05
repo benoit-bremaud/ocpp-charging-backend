@@ -17,9 +17,7 @@ export class ProcessOcppMessage {
     const message = toOcppMessage(input);
 
     if (!message.isCall()) {
-      console.warn(
-        `[ProcessOcppMessage] Non-CALL message type: ${message.messageTypeId}`,
-      );
+      console.warn(`[ProcessOcppMessage] Non-CALL message type: ${message.messageTypeId}`);
       return { status: 'ignored' };
     }
 
@@ -27,9 +25,7 @@ export class ProcessOcppMessage {
     const handler = this.getHandler(message.action);
 
     if (!handler) {
-      console.warn(
-        `[ProcessOcppMessage] No handler for action: ${message.action}`,
-      );
+      console.warn(`[ProcessOcppMessage] No handler for action: ${message.action}`);
       return this.buildErrorResponse(
         message.messageId,
         'NotImplemented',
@@ -40,8 +36,7 @@ export class ProcessOcppMessage {
     try {
       return await handler(message);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return this.buildErrorResponse(message.messageId, 'InternalError', errorMessage);
     }
   }

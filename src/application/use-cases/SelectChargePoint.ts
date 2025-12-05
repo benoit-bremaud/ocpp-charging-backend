@@ -33,14 +33,10 @@ export class SelectChargePoint {
       throw new Error('chargePointId must not be empty');
     }
 
-    const chargePoint = await this.chargePointRepository.findByChargePointId(
-      chargePointId,
-    );
+    const chargePoint = await this.chargePointRepository.findByChargePointId(chargePointId);
 
     if (!chargePoint) {
-      throw new Error(
-        `ChargePoint with chargePointId="${chargePointId}" not found`,
-      );
+      throw new Error(`ChargePoint with chargePointId="${chargePointId}" not found`);
     }
 
     return chargePoint;

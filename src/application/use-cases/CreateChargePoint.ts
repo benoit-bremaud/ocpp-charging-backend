@@ -3,10 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ChargePoint } from '../../domain/entities/ChargePoint.entity';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
-import {
-  CreateChargePointInput,
-  toChargePointEntityData,
-} from '../dto/CreateChargePointInput';
+import { CreateChargePointInput, toChargePointEntityData } from '../dto/CreateChargePointInput';
 
 /**
  * Use-Case: Create a new ChargePoint.

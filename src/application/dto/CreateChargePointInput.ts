@@ -20,9 +20,7 @@ export interface CreateChargePointInput {
  * Helper to map input DTO to a Partial<ChargePoint> entity.
  * Keeps mapping logic in one place.
  */
-export function toChargePointEntityData(
-  input: CreateChargePointInput,
-): Partial<ChargePoint> {
+export function toChargePointEntityData(input: CreateChargePointInput): Partial<ChargePoint> {
   return {
     chargePointId: input.chargePointId,
     chargePointModel: input.chargePointModel,

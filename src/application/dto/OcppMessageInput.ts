@@ -16,10 +16,5 @@ export interface OcppMessageInput {
  * Map incoming OCPP message to domain value object.
  */
 export function toOcppMessage(input: OcppMessageInput): OcppMessage {
-  return new OcppMessage(
-    input.messageTypeId,
-    input.messageId,
-    input.action,
-    input.payload,
-  );
+  return new OcppMessage(input.messageTypeId, input.messageId, input.action, input.payload);
 }
