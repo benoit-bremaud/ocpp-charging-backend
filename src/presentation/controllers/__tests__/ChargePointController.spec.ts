@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChargePointController } from '../ChargePointController';
 import { SelectChargePoint } from '../../../application/use-cases/SelectChargePoint';
 import { CreateChargePoint } from '../../../application/use-cases/CreateChargePoint';
+import { FindAllChargePoints } from '../../../application/use-cases/FindAllChargePoints';
 import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
 import { CreateChargePointInput } from '../../../application/dto/CreateChargePointInput';
 
@@ -9,20 +10,63 @@ describe('ChargePointController', () => {
   let controller: ChargePointController;
   let selectUseCase: { execute: jest.Mock };
   let createUseCase: { execute: jest.Mock };
+  let findAllUseCase: { execute: jest.Mock };
 
   beforeEach(async () => {
     selectUseCase = { execute: jest.fn() };
     createUseCase = { execute: jest.fn() };
+    findAllUseCase = { execute: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChargePointController],
       providers: [
         { provide: SelectChargePoint, useValue: selectUseCase },
         { provide: CreateChargePoint, useValue: createUseCase },
+        { provide: FindAllChargePoints, useValue: findAllUseCase },
       ],
     }).compile();
 
     controller = module.get<ChargePointController>(ChargePointController);
+  });
+
+  describe('getAllChargePoints', () => {
+    it('should return list of all ChargePoints', async () => {
+      const mockChargePoints: Partial<ChargePoint>[] = [
+        {
+          id: '123',
+          chargePointId: 'CP-001',
+          chargePointModel: 'Tesla Supercharger',
+          chargePointVendor: 'Tesla Inc',
+          firmwareVersion: '1.0.0',
+          status: 'OFFLINE',
+          heartbeatInterval: 900,
+        },
+        {
+          id: '456',
+          chargePointId: 'CP-002',
+          chargePointModel: 'Wallbox',
+          chargePointVendor: 'Wallbox SA',
+          firmwareVersion: '2.0.0',
+          status: 'OFFLINE',
+          heartbeatInterval: 900,
+        },
+      ];
+
+      findAllUseCase.execute.mockResolvedValue(mockChargePoints);
+
+      const result = await controller.getAllChargePoints();
+
+      expect(findAllUseCase.execute).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(mockChargePoints);
+    });
+
+    it('should return empty array when no ChargePoints exist', async () => {
+      findAllUseCase.execute.mockResolvedValue([]);
+
+      const result = await controller.getAllChargePoints();
+
+      expect(result).toEqual([]);
+    });
   });
 
   describe('getChargePointById', () => {
