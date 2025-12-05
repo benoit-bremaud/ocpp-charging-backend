@@ -13,14 +13,17 @@ import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 import { ChargePointGateway } from './infrastructure/websocket/ChargePointGateway';
 import { ChargePointWebSocketService } from './infrastructure/websocket/ChargePointWebSocketService';
 
-// Application
+// Application - CRUD
 import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
 import { CreateChargePoint } from './application/use-cases/CreateChargePoint';
 import { FindAllChargePoints } from './application/use-cases/FindAllChargePoints';
 import { UpdateChargePoint } from './application/use-cases/UpdateChargePoint';
 import { DeleteChargePoint } from './application/use-cases/DeleteChargePoint';
+
+// Application - OCPP
 import { ProcessOcppMessage } from './application/use-cases/ProcessOcppMessage';
 import { HandleBootNotification } from './application/use-cases/HandleBootNotification';
+import { HandleHeartbeat } from './application/use-cases/HandleHeartbeat';
 
 // Presentation
 import { ChargePointController } from './presentation/controllers/ChargePointController';
@@ -33,7 +36,8 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => getTypeOrmConfig(configService),
+      useFactory: (configService: ConfigService) =>
+        getTypeOrmConfig(configService),
     }),
     TypeOrmModule.forFeature([ChargePoint]),
   ],
@@ -53,6 +57,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     // Use-cases (OCPP)
     ProcessOcppMessage,
     HandleBootNotification,
+    HandleHeartbeat,
     // WebSocket
     ChargePointGateway,
     ChargePointWebSocketService,
@@ -66,6 +71,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     DeleteChargePoint,
     ProcessOcppMessage,
     HandleBootNotification,
+    HandleHeartbeat,
     ChargePointWebSocketService,
   ],
 })
