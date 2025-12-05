@@ -20,8 +20,10 @@ import { FindAllChargePoints } from './application/use-cases/FindAllChargePoints
 import { UpdateChargePoint } from './application/use-cases/UpdateChargePoint';
 import { DeleteChargePoint } from './application/use-cases/DeleteChargePoint';
 
-// Application - OCPP
+// Application - OCPP Dispatcher
 import { ProcessOcppMessage } from './application/use-cases/ProcessOcppMessage';
+
+// Application - OCPP Handlers
 import { HandleBootNotification } from './application/use-cases/HandleBootNotification';
 import { HandleHeartbeat } from './application/use-cases/HandleHeartbeat';
 import { HandleStatusNotification } from './application/use-cases/HandleStatusNotification';
@@ -55,11 +57,12 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     FindAllChargePoints,
     UpdateChargePoint,
     DeleteChargePoint,
-    // Use-cases (OCPP)
-    ProcessOcppMessage,
+    // Use-cases (OCPP Handlers)
     HandleBootNotification,
     HandleHeartbeat,
     HandleStatusNotification,
+    // Use-cases (OCPP Dispatcher - depends on handlers)
+    ProcessOcppMessage,
     // WebSocket
     ChargePointGateway,
     ChargePointWebSocketService,
