@@ -25,7 +25,7 @@ export class ChargePointGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private connectedClients: Map<string, Socket> = new Map();
 
