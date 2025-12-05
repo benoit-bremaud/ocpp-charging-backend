@@ -9,6 +9,7 @@ import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
  *
  * OCPP 1.6 Spec:
  * - ChargePoint announces itself after power-on
+ * - chargePointId comes from WebSocket query params (NOT payload)
  * - Response: [3, messageId, {status, currentTime, interval}]
  *
  * CLEAN: Application layer handles business logic.
@@ -25,8 +26,14 @@ export class HandleBootNotification {
 
   /**
    * Execute: handle BootNotification from ChargePoint.
+   * 
+   * @param message OCPP message
+   * @param chargePointId From WebSocket query params
    */
-  async execute(message: OcppMessage): Promise<Record<string, any>> {
+  async execute(
+    message: OcppMessage,
+    chargePointId: string = 'CP-UNKNOWN',
+  ): Promise<Record<string, any>> {
     if (!message.isCall()) {
       this.logger.error('BootNotification handler expects CALL message');
       throw new Error('BootNotification handler expects CALL message');
@@ -45,17 +52,7 @@ export class HandleBootNotification {
       );
     }
 
-    const { chargePointId } = message.payload;
-
-    if (!chargePointId) {
-      this.logger.warn('BootNotification missing chargePointId');
-      return this.buildErrorResponse(
-        message.messageId,
-        'MissingChargePointId',
-      );
-    }
-
-    // Find ChargePoint
+    // Find ChargePoint by ID from WebSocket
     const chargePoint =
       await this.chargePointRepository.findByChargePointId(chargePointId);
 
@@ -64,6 +61,7 @@ export class HandleBootNotification {
       return this.buildErrorResponse(
         message.messageId,
         'ChargePointNotFound',
+        `ChargePoint not found: ${chargePointId}`,
       );
     }
 
@@ -76,24 +74,20 @@ export class HandleBootNotification {
       message.messageId,
       {
         currentTime: new Date().toISOString(),
-        interval: 900, // Heartbeat interval in seconds
+        interval: 900,
         status: 'Accepted',
       },
     ];
   }
 
   /**
-   * Build error response.
+   * Build error response [4, messageId, errorCode, errorDescription].
    */
   private buildErrorResponse(
     messageId: string,
     errorCode: string,
+    errorDescription: string,
   ): Record<string, any> {
-    return [
-      4,
-      messageId,
-      errorCode,
-      `BootNotification failed: ${errorCode}`,
-    ];
+    return [4, messageId, errorCode, errorDescription];
   }
 }

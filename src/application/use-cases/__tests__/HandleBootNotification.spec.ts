@@ -15,15 +15,24 @@ describe('HandleBootNotification Use-Case', () => {
     useCase = new HandleBootNotification(
       repositoryMock as unknown as IChargePointRepository,
     );
+
+    // Mock Logger
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should return BootNotificationResponse on success', async () => {
+    // Per OCPP 1.6: payload has NO chargePointId (comes from WebSocket query)
     const message = new OcppMessage(
       2,
       'boot-001',
       'BootNotification',
       {
-        chargePointId: 'CP-001',
         chargePointModel: 'Tesla Supercharger',
         chargePointVendor: 'Tesla Inc',
       },
@@ -36,7 +45,7 @@ describe('HandleBootNotification Use-Case', () => {
 
     repositoryMock.findByChargePointId.mockResolvedValue(mockChargePoint);
 
-    const result = await useCase.execute(message);
+    const result = await useCase.execute(message, 'CP-001');
 
     expect(result).toEqual([
       3,
@@ -53,12 +62,15 @@ describe('HandleBootNotification Use-Case', () => {
       2,
       'boot-002',
       'BootNotification',
-      { chargePointId: 'CP-NONEXISTENT' },
+      {
+        chargePointModel: 'Tesla',
+        chargePointVendor: 'Tesla Inc',
+      },
     );
 
     repositoryMock.findByChargePointId.mockResolvedValue(null);
 
-    const result = await useCase.execute(message);
+    const result = await useCase.execute(message, 'CP-NONEXISTENT');
 
     expect(result).toEqual([
       4,
@@ -68,16 +80,19 @@ describe('HandleBootNotification Use-Case', () => {
     ]);
   });
 
-  it('should return error if chargePointId missing', async () => {
-    const message = new OcppMessage(2, 'boot-003', 'BootNotification', {});
-
-    const result = await useCase.execute(message);
-
-    expect(result).toEqual([
-      4,
+  it('should return error if required fields missing', async () => {
+    const message = new OcppMessage(
+      2,
       'boot-003',
-      'MissingChargePointId',
-      expect.any(String),
-    ]);
+      'BootNotification',
+      {
+        // Missing chargePointModel and chargePointVendor
+      },
+    );
+
+    const result = await useCase.execute(message, 'CP-001');
+
+    expect(result[0]).toBe(4); // CALLERROR
+    expect(result[2]).toBe('FormationViolation');
   });
 });
