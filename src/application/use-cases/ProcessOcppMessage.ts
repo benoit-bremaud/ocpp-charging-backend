@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OcppMessage } from '../../domain/value-objects/OcppMessage';
 import { toOcppMessage, OcppMessageInput } from '../dto/OcppMessageInput';
 import { HandleBootNotification } from './HandleBootNotification';
@@ -65,7 +65,7 @@ export class ProcessOcppMessage {
       this.logger.debug(
         `Processing ${message.action} (messageId: ${message.messageId})`,
       );
-      // Execute handler with chargePointId context
+      // Execute handler
       return await handler(message, chargePointId);
     } catch (error) {
       const errorMessage =
@@ -86,24 +86,24 @@ export class ProcessOcppMessage {
    * Get handler function for specific OCPP action.
    * 
    * Handler Registry (extensible):
-   * - BootNotification: ChargePoint boot/registration
-   * - Heartbeat: Keep-alive probe
-   * - StatusNotification: Connector status changes
+   * - BootNotification: ChargePoint boot/registration (needs chargePointId)
+   * - Heartbeat: Keep-alive probe (no chargePointId needed in current impl)
+   * - StatusNotification: Connector status changes (needs chargePointId)
    * - [Future handlers added here]
    */
   private getHandler(
     action: string,
-  ): ((msg: OcppMessage, cpId: string) => Promise<Record<string, any>>) | null {
+  ): ((msg: OcppMessage, cpId?: string) => Promise<Record<string, any>>) | null {
     const handlers: Record<
       string,
-      (msg: OcppMessage, cpId: string) => Promise<Record<string, any>>
+      (msg: OcppMessage, cpId?: string) => Promise<Record<string, any>>
     > = {
       BootNotification: (msg, cpId) =>
-        this.handleBootNotification.execute(msg, cpId),
-      Heartbeat: (msg, cpId) =>
-        this.handleHeartbeat.execute(msg, cpId),
+        this.handleBootNotification.execute(msg, cpId || 'CP-UNKNOWN'),
+      Heartbeat: (msg) =>
+        this.handleHeartbeat.execute(msg),
       StatusNotification: (msg, cpId) =>
-        this.handleStatusNotification.execute(msg, cpId),
+        this.handleStatusNotification.execute(msg, cpId || 'CP-UNKNOWN'),
       // [Future handlers]
       // Authorize: (msg, cpId) => this.handleAuthorize.execute(msg, cpId),
       // MeterValues: (msg, cpId) => this.handleMeterValues.execute(msg, cpId),
