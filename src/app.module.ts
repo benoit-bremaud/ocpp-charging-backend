@@ -7,12 +7,26 @@ import { AppService } from './app.service';
 import { getTypeOrmConfig } from './infrastructure/database/typeorm.config';
 import { ChargePoint } from './domain/entities/ChargePoint.entity';
 
+// Domain
+import { IChargePointRepository } from './domain/repositories/IChargePointRepository';
+
+// Infrastructure
+import { ChargePointRepository } from './infrastructure/repositories/ChargePointRepository';
+
+/**
+ * Symbolic token for IChargePointRepository.
+ * Enables explicit binding of interface to implementation.
+ *
+ * SOLID: DIP - depends on abstraction, not concrete class.
+ */
+export const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
+
 /**
  * App Module
  * Root module of the NestJS application
  *
  * CLEAN: Imports all layers (Domain, Application, Infrastructure, Presentation)
- * SOLID: Dependencies injected via NestJS DI
+ * SOLID: Dependencies injected via NestJS DI with explicit tokens
  */
 @Module({
   imports: [
@@ -32,6 +46,13 @@ import { ChargePoint } from './domain/entities/ChargePoint.entity';
     TypeOrmModule.forFeature([ChargePoint]),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: CHARGE_POINT_REPOSITORY_TOKEN,
+      useClass: ChargePointRepository,
+    },
+  ],
+  exports: [CHARGE_POINT_REPOSITORY_TOKEN],
 })
 export class AppModule {}
