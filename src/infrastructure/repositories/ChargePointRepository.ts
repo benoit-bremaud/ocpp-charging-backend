@@ -6,59 +6,65 @@ import { ChargePoint } from '../../domain/entities/ChargePoint.entity';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 
 /**
- * TypeORM-based implementation of IChargePointRepository.
+ * Infrastructure Layer: TypeORM implementation of IChargePointRepository.
  *
- * CLEAN: Adapter in Infrastructure layer.
- * SOLID: Implements domain interface, hides persistence details.
- *        Depends on abstraction (IChargePointRepository), not concrete types.
+ * CLEAN: Adapter between domain interface and database.
+ * SOLID: Implements IChargePointRepository contract exactly.
  */
 @Injectable()
 export class ChargePointRepository implements IChargePointRepository {
   constructor(
     @InjectRepository(ChargePoint)
-    private readonly repo: Repository<ChargePoint>,
+    private readonly typeormRepository: Repository<ChargePoint>,
   ) {}
 
   /**
-   * @inheritdoc
+   * Find a ChargePoint by UUID.
    */
-  async findById(id: string): Promise<ChargePoint | null> {
-    return this.repo.findOne({ where: { id } });
+  async find(id: string): Promise<ChargePoint | null> {
+    return this.typeormRepository.findOne({ where: { id } });
   }
 
   /**
-   * @inheritdoc
-   */
-  async findByChargePointId(chargePointId: string): Promise<ChargePoint | null> {
-    return this.repo.findOne({ where: { chargePointId } });
-  }
-
-  /**
-   * @inheritdoc
+   * Find all ChargePoints.
    */
   async findAll(): Promise<ChargePoint[]> {
-    return this.repo.find();
+    return this.typeormRepository.find();
   }
 
   /**
-   * @inheritdoc
+   * Find a ChargePoint by business identifier (chargePointId).
+   */
+  async findByChargePointId(chargePointId: string): Promise<ChargePoint | null> {
+    return this.typeormRepository.findOne({ where: { chargePointId } });
+  }
+
+  /**
+   * Create a new ChargePoint.
    */
   async create(data: Partial<ChargePoint>): Promise<ChargePoint> {
-    const entity = this.repo.create(data);
-    return this.repo.save(entity);
+    const entity = this.typeormRepository.create(data);
+    return this.typeormRepository.save(entity);
   }
 
   /**
-   * @inheritdoc
+   * Update an existing ChargePoint by UUID.
    */
   async update(id: string, data: Partial<ChargePoint>): Promise<ChargePoint> {
-    await this.repo.update(id, data);
-    const updated = await this.findById(id);
+    await this.typeormRepository.update(id, data);
+    const updated = await this.typeormRepository.findOne({ where: { id } });
 
     if (!updated) {
-      throw new Error(`ChargePoint with id ${id} not found after update`);
+      throw new Error(`ChargePoint with id="${id}" not found after update`);
     }
 
     return updated;
+  }
+
+  /**
+   * Delete a ChargePoint by UUID.
+   */
+  async delete(id: string): Promise<void> {
+    await this.typeormRepository.delete(id);
   }
 }
