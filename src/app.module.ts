@@ -19,6 +19,8 @@ import { CreateChargePoint } from './application/use-cases/CreateChargePoint';
 import { FindAllChargePoints } from './application/use-cases/FindAllChargePoints';
 import { UpdateChargePoint } from './application/use-cases/UpdateChargePoint';
 import { DeleteChargePoint } from './application/use-cases/DeleteChargePoint';
+import { ProcessOcppMessage } from './application/use-cases/ProcessOcppMessage';
+import { HandleBootNotification } from './application/use-cases/HandleBootNotification';
 
 // Presentation
 import { ChargePointController } from './presentation/controllers/ChargePointController';
@@ -43,13 +45,16 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
       provide: CHARGE_POINT_REPOSITORY_TOKEN,
       useClass: ChargePointRepository,
     },
-    // Use-cases (Application)
+    // Use-cases (CRUD)
     SelectChargePoint,
     CreateChargePoint,
     FindAllChargePoints,
     UpdateChargePoint,
     DeleteChargePoint,
-    // WebSocket (Infrastructure)
+    // Use-cases (OCPP)
+    ProcessOcppMessage,
+    HandleBootNotification,
+    // WebSocket
     ChargePointGateway,
     ChargePointWebSocketService,
   ],
@@ -60,6 +65,8 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     FindAllChargePoints,
     UpdateChargePoint,
     DeleteChargePoint,
+    ProcessOcppMessage,
+    HandleBootNotification,
     ChargePointWebSocketService,
   ],
 })
