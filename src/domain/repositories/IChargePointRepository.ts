@@ -1,36 +1,39 @@
-// src/domain/repositories/IChargePointRepository.ts
-
 import { ChargePoint } from '../entities/ChargePoint.entity';
 
 /**
- * Repository abstraction for ChargePoint aggregate.
+ * Domain Layer: Repository Interface (abstraction).
  *
- * CLEAN: Port (interface) exposé par le Domain.
- * SOLID: DIP - les couches externes dépendent de cette abstraction.
+ * CLEAN: No implementation details, pure contract.
+ * SOLID: Abstraction for Dependency Inversion.
  */
 export interface IChargePointRepository {
   /**
-   * Retrieve a ChargePoint by its technical identifier.
+   * Find a ChargePoint by UUID.
    */
-  findById(id: string): Promise<ChargePoint | null>;
+  find(id: string): Promise<ChargePoint | null>;
 
   /**
-   * Retrieve a ChargePoint by its business identifier (chargePointId).
-   */
-  findByChargePointId(chargePointId: string): Promise<ChargePoint | null>;
-
-  /**
-   * List all registered ChargePoints.
+   * Find all ChargePoints.
    */
   findAll(): Promise<ChargePoint[]>;
 
   /**
-   * Persist a new ChargePoint aggregate.
+   * Find a ChargePoint by business identifier (chargePointId).
+   */
+  findByChargePointId(chargePointId: string): Promise<ChargePoint | null>;
+
+  /**
+   * Create a new ChargePoint.
    */
   create(data: Partial<ChargePoint>): Promise<ChargePoint>;
 
   /**
-   * Update an existing ChargePoint aggregate.
+   * Update an existing ChargePoint by UUID.
    */
   update(id: string, data: Partial<ChargePoint>): Promise<ChargePoint>;
+
+  /**
+   * Delete a ChargePoint by UUID.
+   */
+  delete(id: string): Promise<void>;
 }
