@@ -1,18 +1,11 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 /**
- * ChargePoint Entity
- * Represents an OCPP Charge Station
- * Domain: Charging infrastructure
+ * ChargePoint Aggregate Root
+ * Represents an OCPP 1.6 charging station entity.
  *
- * CLEAN: Entity in Domain Layer (business logic isolated)
- * SOLID: Single Responsibility - represents one charge point
+ * CLEAN: Domain entity - no business logic, just data + annotations.
+ * SOLID: SRP - represents a ChargePoint, nothing else.
  */
 @Entity('charge_points')
 export class ChargePoint {
@@ -32,39 +25,23 @@ export class ChargePoint {
   firmwareVersion!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  iccid!: string;
+  iccid: string | null = null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  imsi!: string;
+  imsi: string | null = null;
 
   @Column({ type: 'varchar', length: 50, default: 'OFFLINE' })
   status!: string;
 
-  @Column({ type: 'integer', default: 900 })
+  @Column({ type: 'int', default: 900 })
   heartbeatInterval!: number;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  webSocketUrl!: string;
+  webSocketUrl: string | null = null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt!: Date;
-
-  /**
-   * Business Logic: Check if charge point is healthy
-   * SOLID: Single Responsibility - validates state
-   */
-  isHealthy(): boolean {
-    return this.status === 'AVAILABLE' || this.status === 'CHARGING';
-  }
-
-  /**
-   * Business Logic: Get heartbeat interval in milliseconds
-   * CLEAN: Business logic encapsulated in domain entity
-   */
-  getHeartbeatIntervalMs(): number {
-    return this.heartbeatInterval * 1000;
-  }
 }
