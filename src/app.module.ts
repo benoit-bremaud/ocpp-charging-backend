@@ -15,6 +15,8 @@ import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
 import { CreateChargePoint } from './application/use-cases/CreateChargePoint';
 import { FindAllChargePoints } from './application/use-cases/FindAllChargePoints';
+import { UpdateChargePoint } from './application/use-cases/UpdateChargePoint';
+import { DeleteChargePoint } from './application/use-cases/DeleteChargePoint';
 
 // Presentation
 import { ChargePointController } from './presentation/controllers/ChargePointController';
@@ -42,12 +44,16 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     SelectChargePoint,
     CreateChargePoint,
     FindAllChargePoints,
+    UpdateChargePoint,
+    DeleteChargePoint,
   ],
   exports: [
     CHARGE_POINT_REPOSITORY_TOKEN,
     SelectChargePoint,
     CreateChargePoint,
     FindAllChargePoints,
+    UpdateChargePoint,
+    DeleteChargePoint,
   ],
 })
 export class AppModule {}
