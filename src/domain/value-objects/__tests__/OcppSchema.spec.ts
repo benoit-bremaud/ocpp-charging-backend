@@ -13,7 +13,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
         extraField: 'not allowed',
       });
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('Additional property not allowed'),
       );
     });
@@ -48,7 +48,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('BootNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('exceeds max length'),
       );
     });
@@ -75,7 +75,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('StatusNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('must be one of'),
       );
     });
@@ -89,7 +89,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('StatusNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('ISO 8601'),
       );
     });
