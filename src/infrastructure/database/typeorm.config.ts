@@ -9,9 +9,7 @@ import { ChargePoint } from '../../domain/entities/ChargePoint.entity';
  * CLEAN: Infrastructure layer - database adapter
  * SOLID: Factory pattern + Dependency Injection
  */
-export const getTypeOrmConfig = (
-  configService: ConfigService,
-): TypeOrmModuleOptions => {
+export const getTypeOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
   const isProduction = configService.get<string>('APP_ENV') === 'production';
 
   return {
@@ -21,10 +19,10 @@ export const getTypeOrmConfig = (
     username: configService.get<string>('DATABASE_USER', 'ocpp_user'),
     password: configService.get<string>('DATABASE_PASSWORD', 'ocpp_password'),
     database: configService.get<string>('DATABASE_NAME', 'ocpp_db'),
-    
+
     // ✅ CRITICAL: Import entity directly (not glob pattern)
     entities: [ChargePoint],
-    
+
     synchronize: !isProduction,
     logging: !isProduction,
     dropSchema: false,

@@ -54,11 +54,11 @@ export class ChargePointRepository implements IChargePointRepository {
   async update(id: string, data: Partial<ChargePoint>): Promise<ChargePoint> {
     await this.repo.update(id, data);
     const updated = await this.findById(id);
-    
+
     if (!updated) {
       throw new Error(`ChargePoint with id ${id} not found after update`);
     }
-    
+
     return updated;
   }
 }
