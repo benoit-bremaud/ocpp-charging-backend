@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OcppMessage } from '../../domain/value-objects/OcppMessage';
 import { toOcppMessage, OcppMessageInput } from '../dto/OcppMessageInput';
 
@@ -10,6 +10,8 @@ import { toOcppMessage, OcppMessageInput } from '../dto/OcppMessageInput';
  */
 @Injectable()
 export class ProcessOcppMessage {
+  private logger = new Logger('ProcessOcppMessage');
+
   /**
    * Execute: process OCPP message and return appropriate response.
    */
@@ -17,7 +19,9 @@ export class ProcessOcppMessage {
     const message = toOcppMessage(input);
 
     if (!message.isCall()) {
-      console.warn(`[ProcessOcppMessage] Non-CALL message type: ${message.messageTypeId}`);
+      this.logger.debug(
+        `Non-CALL message type: ${message.messageTypeId} (ignored)`,
+      );
       return { status: 'ignored' };
     }
 
@@ -25,7 +29,9 @@ export class ProcessOcppMessage {
     const handler = this.getHandler(message.action);
 
     if (!handler) {
-      console.warn(`[ProcessOcppMessage] No handler for action: ${message.action}`);
+      this.logger.warn(
+        `No handler registered for action: ${message.action}`,
+      );
       return this.buildErrorResponse(
         message.messageId,
         'NotImplemented',
@@ -34,22 +40,36 @@ export class ProcessOcppMessage {
     }
 
     try {
+      this.logger.debug(
+        `Processing ${message.action} (messageId: ${message.messageId})`,
+      );
       return await handler(message);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return this.buildErrorResponse(message.messageId, 'InternalError', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Error processing ${message.action}: ${errorMessage}`,
+        error instanceof Error ? error.stack : '',
+      );
+      return this.buildErrorResponse(
+        message.messageId,
+        'InternalError',
+        errorMessage,
+      );
     }
   }
 
   /**
    * Get handler function for specific OCPP action.
    */
-  private getHandler(action: string): ((msg: OcppMessage) => Promise<Record<string, any>>) | null {
-    const handlers: Record<string, (msg: OcppMessage) => Promise<Record<string, any>>> = {
-      // Handlers will be registered here in STEP 9
-      // BootNotification: handleBootNotification,
-      // Heartbeat: handleHeartbeat,
-      // StatusNotification: handleStatusNotification,
+  private getHandler(
+    action: string,
+  ): ((msg: OcppMessage) => Promise<Record<string, any>>) | null {
+    const handlers: Record<
+      string,
+      (msg: OcppMessage) => Promise<Record<string, any>>
+    > = {
+      // Handlers will be registered here in STEP 11+
     };
 
     return handlers[action] || null;
