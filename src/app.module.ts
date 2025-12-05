@@ -7,19 +7,12 @@ import { AppService } from './app.service';
 import { getTypeOrmConfig } from './infrastructure/database/typeorm.config';
 import { ChargePoint } from './domain/entities/ChargePoint.entity';
 
-// Domain
-import { IChargePointRepository } from './domain/repositories/IChargePointRepository';
-
 // Infrastructure
 import { ChargePointRepository } from './infrastructure/repositories/ChargePointRepository';
+import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 
-/**
- * Symbolic token for IChargePointRepository.
- * Enables explicit binding of interface to implementation.
- *
- * SOLID: DIP - depends on abstraction, not concrete class.
- */
-export const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
+// Application
+import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
 
 /**
  * App Module
@@ -52,7 +45,8 @@ export const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
       provide: CHARGE_POINT_REPOSITORY_TOKEN,
       useClass: ChargePointRepository,
     },
+    SelectChargePoint,
   ],
-  exports: [CHARGE_POINT_REPOSITORY_TOKEN],
+  exports: [CHARGE_POINT_REPOSITORY_TOKEN, SelectChargePoint],
 })
 export class AppModule {}

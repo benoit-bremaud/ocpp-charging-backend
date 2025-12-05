@@ -1,9 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 
 import { ChargePoint } from '../../domain/entities/ChargePoint.entity';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../app.module';
+import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
 
 /**
  * Use-Case: Retrieve a ChargePoint by its business identifier.
