@@ -14,6 +14,9 @@ import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 // Application
 import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
 
+// Presentation
+import { ChargePointController } from './presentation/controllers/ChargePointController';
+
 /**
  * App Module
  * Root module of the NestJS application
@@ -38,7 +41,7 @@ import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
     // Register entities for injection
     TypeOrmModule.forFeature([ChargePoint]),
   ],
-  controllers: [AppController],
+  controllers: [AppController, ChargePointController],
   providers: [
     AppService,
     {
