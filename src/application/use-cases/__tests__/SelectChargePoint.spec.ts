@@ -39,7 +39,7 @@ describe('SelectChargePoint', () => {
         imsi: null,
         status: 'OFFLINE',
         heartbeatInterval: 900,
-        webSocketUrl: 'ws://localhost:8080',
+        webSocketUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
