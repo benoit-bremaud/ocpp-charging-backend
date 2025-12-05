@@ -86,7 +86,7 @@ export class ChargePointGateway
    * Broadcast ChargePoint status change to all connected clients.
    */
   broadcastChargePointStatus(chargePointId: string, status: string): void {
-    this.logger.log(`📡 Status: ${chargePointId} → ${status}`);
+    this.logger.log(`📡 Status update: ${chargePointId} → ${status}`);
     this.server.emit('charge-point:status-changed', {
       chargePointId,
       status,
