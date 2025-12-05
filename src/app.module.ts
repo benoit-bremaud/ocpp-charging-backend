@@ -13,32 +13,22 @@ import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 
 // Application
 import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
+import { CreateChargePoint } from './application/use-cases/CreateChargePoint';
 
 // Presentation
 import { ChargePointController } from './presentation/controllers/ChargePointController';
 
-/**
- * App Module
- * Root module of the NestJS application
- *
- * CLEAN: Imports all layers (Domain, Application, Infrastructure, Presentation)
- * SOLID: Dependencies injected via NestJS DI with explicit tokens
- */
 @Module({
   imports: [
-    // Load environment variables
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
-
-    // Setup TypeORM with dynamic configuration
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => getTypeOrmConfig(configService),
+      useFactory: (configService: ConfigService) =>
+        getTypeOrmConfig(configService),
     }),
-
-    // Register entities for injection
     TypeOrmModule.forFeature([ChargePoint]),
   ],
   controllers: [AppController, ChargePointController],
@@ -49,7 +39,8 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
       useClass: ChargePointRepository,
     },
     SelectChargePoint,
+    CreateChargePoint,
   ],
-  exports: [CHARGE_POINT_REPOSITORY_TOKEN, SelectChargePoint],
+  exports: [CHARGE_POINT_REPOSITORY_TOKEN, SelectChargePoint, CreateChargePoint],
 })
 export class AppModule {}
