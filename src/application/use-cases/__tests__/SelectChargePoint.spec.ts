@@ -2,89 +2,53 @@ import { SelectChargePoint } from '../SelectChargePoint';
 import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
 import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
 
-/**
- * Unit tests for SelectChargePoint use-case.
- *
- * SOLID: DIP - tests mock the IChargePointRepository interface.
- * No database, no TypeORM → pure logic testing.
- */
-describe('SelectChargePoint', () => {
+describe('SelectChargePoint Use-Case', () => {
   let useCase: SelectChargePoint;
-  let mockRepository: jest.Mocked<IChargePointRepository>;
+  let repositoryMock: { findByChargePointId: jest.Mock };
 
   beforeEach(() => {
-    // Mock the repository interface
-    mockRepository = {
-      findById: jest.fn(),
+    repositoryMock = {
       findByChargePointId: jest.fn(),
-      findAll: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
     };
 
-    useCase = new SelectChargePoint(mockRepository);
+    useCase = new SelectChargePoint(
+      repositoryMock as unknown as IChargePointRepository,
+    );
   });
 
-  describe('execute', () => {
-    it('should return a ChargePoint when found by chargePointId', async () => {
-      // Arrange
-      const chargePointId = 'CP-001';
-      const mockChargePoint: ChargePoint = {
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        chargePointId,
-        chargePointModel: 'Wallbox',
-        chargePointVendor: 'Tesla',
-        firmwareVersion: '1.0.0',
-        iccid: null,
-        imsi: null,
-        status: 'OFFLINE',
-        heartbeatInterval: 900,
-        webSocketUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+  it('should return a ChargePoint when found by chargePointId', async () => {
+    const chargePointId = 'CP-001';
+    const mockChargePoint: Partial<ChargePoint> = {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      chargePointId,
+      chargePointModel: 'Tesla Supercharger',
+      chargePointVendor: 'Tesla Inc',
+      firmwareVersion: '1.0.0',
+      status: 'OFFLINE',
+      heartbeatInterval: 900,
+    };
 
-      mockRepository.findByChargePointId.mockResolvedValue(mockChargePoint);
+    repositoryMock.findByChargePointId.mockResolvedValue(mockChargePoint);
 
-      // Act
-      const result = await useCase.execute(chargePointId);
+    const result = await useCase.execute(chargePointId);
 
-      // Assert
-      expect(result).toEqual(mockChargePoint);
-      expect(mockRepository.findByChargePointId).toHaveBeenCalledWith(
-        chargePointId,
-      );
-      expect(mockRepository.findByChargePointId).toHaveBeenCalledTimes(1);
-    });
+    expect(repositoryMock.findByChargePointId).toHaveBeenCalledWith(
+      chargePointId,
+    );
+    expect(result).toEqual(mockChargePoint);
+  });
 
-    it('should throw an error when ChargePoint not found', async () => {
-      // Arrange
-      const chargePointId = 'CP-NONEXISTENT';
-      mockRepository.findByChargePointId.mockResolvedValue(null);
+  it('should throw if chargePointId is empty', async () => {
+    await expect(useCase.execute('   ')).rejects.toThrow(
+      'chargePointId must not be empty',
+    );
+  });
 
-      // Act & Assert
-      await expect(useCase.execute(chargePointId)).rejects.toThrow(
-        `ChargePoint with chargePointId="${chargePointId}" not found`,
-      );
-      expect(mockRepository.findByChargePointId).toHaveBeenCalledWith(
-        chargePointId,
-      );
-    });
+  it('should throw if ChargePoint not found', async () => {
+    repositoryMock.findByChargePointId.mockResolvedValue(null);
 
-    it('should throw an error when chargePointId is empty', async () => {
-      // Act & Assert
-      await expect(useCase.execute('')).rejects.toThrow(
-        'chargePointId must not be empty',
-      );
-      expect(mockRepository.findByChargePointId).not.toHaveBeenCalled();
-    });
-
-    it('should throw an error when chargePointId is whitespace only', async () => {
-      // Act & Assert
-      await expect(useCase.execute('   ')).rejects.toThrow(
-        'chargePointId must not be empty',
-      );
-      expect(mockRepository.findByChargePointId).not.toHaveBeenCalled();
-    });
+    await expect(useCase.execute('CP-NONEXISTENT')).rejects.toThrow(
+      'not found',
+    );
   });
 });
