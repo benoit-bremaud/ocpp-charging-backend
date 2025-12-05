@@ -5,19 +5,18 @@ import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
 
 describe('CreateChargePoint Use-Case', () => {
   let useCase: CreateChargePoint;
-  let repositoryMock: jest.Mocked<IChargePointRepository>;
+  let repositoryMock: {
+    create: jest.Mock;
+  };
 
   beforeEach(() => {
     repositoryMock = {
-      find: jest.fn(),
-      findAll: jest.fn(),
-      findByChargePointId: jest.fn(),
       create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
     };
 
-    useCase = new CreateChargePoint(repositoryMock);
+    useCase = new CreateChargePoint(
+      repositoryMock as unknown as IChargePointRepository,
+    );
   });
 
   const validInput: CreateChargePointInput = {
