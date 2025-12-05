@@ -12,27 +12,33 @@ import {
 
 import { SelectChargePoint } from '../../application/use-cases/SelectChargePoint';
 import { CreateChargePoint } from '../../application/use-cases/CreateChargePoint';
+import { FindAllChargePoints } from '../../application/use-cases/FindAllChargePoints';
 import { ChargePoint } from '../../domain/entities/ChargePoint.entity';
 import { CreateChargePointInput } from '../../application/dto/CreateChargePointInput';
 
 /**
  * Presentation Layer: HTTP API for ChargePoint domain
- *
- * CLEAN: Controller = thin adapter between HTTP and Application layer
- * No business logic here - just HTTP routing + use-case invocation
- *
- * SOLID: SRP - controller only handles HTTP concerns
  */
 @Controller('charge-points')
 export class ChargePointController {
   constructor(
     private readonly selectChargePointUseCase: SelectChargePoint,
     private readonly createChargePointUseCase: CreateChargePoint,
+    private readonly findAllChargePointsUseCase: FindAllChargePoints,
   ) {}
 
   /**
+   * GET /charge-points
+   * Retrieve all ChargePoints
+   */
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getAllChargePoints(): Promise<ChargePoint[]> {
+    return this.findAllChargePointsUseCase.execute();
+  }
+
+  /**
    * GET /charge-points/:chargePointId
-   * Retrieve a ChargePoint by its business identifier
    */
   @Get(':chargePointId')
   @HttpCode(HttpStatus.OK)
@@ -57,10 +63,6 @@ export class ChargePointController {
   /**
    * POST /charge-points
    * Create a new ChargePoint
-   *
-   * HTTP:
-   * - 201 Created: ChargePoint created
-   * - 400 Bad Request: invalid payload
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
