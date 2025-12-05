@@ -10,6 +10,8 @@ import { ChargePoint } from './domain/entities/ChargePoint.entity';
 // Infrastructure
 import { ChargePointRepository } from './infrastructure/repositories/ChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
+import { ChargePointGateway } from './infrastructure/websocket/ChargePointGateway';
+import { ChargePointWebSocketService } from './infrastructure/websocket/ChargePointWebSocketService';
 
 // Application
 import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
@@ -41,11 +43,15 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
       provide: CHARGE_POINT_REPOSITORY_TOKEN,
       useClass: ChargePointRepository,
     },
+    // Use-cases (Application)
     SelectChargePoint,
     CreateChargePoint,
     FindAllChargePoints,
     UpdateChargePoint,
     DeleteChargePoint,
+    // WebSocket (Infrastructure)
+    ChargePointGateway,
+    ChargePointWebSocketService,
   ],
   exports: [
     CHARGE_POINT_REPOSITORY_TOKEN,
@@ -54,6 +60,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     FindAllChargePoints,
     UpdateChargePoint,
     DeleteChargePoint,
+    ChargePointWebSocketService,
   ],
 })
 export class AppModule {}
