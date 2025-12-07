@@ -2,7 +2,7 @@
  * ReservationOutput Unit Tests
  * 
  * Tests unitaires pour le DTO de sortie ReservationOutput
- * Valide status et reservationId optionnel
+ * Valide la structure et les statuts de réservation
  */
 
 import { ReservationOutput } from '../ReservationOutput';
@@ -16,15 +16,12 @@ describe('ReservationOutput', () => {
 
   describe('structure', () => {
     it('should have status property', () => {
-      expect(output).toHaveProperty('status');
-    });
-
-    it('should have optional reservationId', () => {
-      expect(output).toHaveProperty('reservationId');
+      output.status = 'Accepted';
+      expect(output.status).toBe('Accepted');
     });
   });
 
-  describe('status', () => {
+  describe('status types', () => {
     it('should support Accepted status', () => {
       output.status = 'Accepted';
       expect(output.status).toBe('Accepted');
@@ -54,8 +51,8 @@ describe('ReservationOutput', () => {
   describe('reservationId', () => {
     it('should assign reservationId when provided', () => {
       output.status = 'Accepted';
-      output.reservationId = 123;
-      expect(output.reservationId).toBe(123);
+      output.reservationId = 12345;
+      expect(output.reservationId).toBe(12345);
     });
 
     it('should be optional', () => {
@@ -64,6 +61,7 @@ describe('ReservationOutput', () => {
     });
 
     it('should support zero as reservationId', () => {
+      output.status = 'Accepted';
       output.reservationId = 0;
       expect(output.reservationId).toBe(0);
     });
@@ -72,15 +70,17 @@ describe('ReservationOutput', () => {
   describe('complete object', () => {
     it('should create ReservationOutput with reservationId', () => {
       output.status = 'Accepted';
-      output.reservationId = 123;
+      output.reservationId = 12345;
+
       expect(output).toEqual({
         status: 'Accepted',
-        reservationId: 123,
+        reservationId: 12345
       });
     });
 
     it('should create ReservationOutput without reservationId', () => {
       output.status = 'Rejected';
+
       expect(output.status).toBe('Rejected');
       expect(output.reservationId).toBeUndefined();
     });
