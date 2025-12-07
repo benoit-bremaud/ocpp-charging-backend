@@ -1,87 +1,35 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { OcppMessage } from '../../domain/value-objects/OcppMessage';
-import { OcppSchema } from '../../domain/value-objects/OcppSchema';
-import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
+import { Injectable, Logger } from '@nestjs/common';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
+import { OcppCallRequest } from '../dto/OcppProtocol';
+import { buildHeartbeatResponse, buildGenericError } from '../dto/OcppResponseBuilders';
 
 /**
- * Use-Case: Handle OCPP Heartbeat message.
+ * Use-Case: Handle Heartbeat (OCPP 1.6 Compliant)
  *
- * OCPP 1.6 Spec:
- * - Heartbeat has NO payload fields (empty object)
- * - Response: [3, messageId, {currentTime}]
+ * Input:  [2, messageId, "Heartbeat", {}]
+ * Output: [3, messageId, {currentTime}]
+ * Error:  [4, messageId, errorCode, description]
  *
- * CLEAN: Application layer business logic.
- * SOLID: DIP - depends on repository abstraction.
+ * CLEAN: Pure business logic (stateless)
+ * OCPP:  Simple heartbeat echo with server time
  */
 @Injectable()
 export class HandleHeartbeat {
   private logger = new Logger('HandleHeartbeat');
 
-  constructor(
-    @Inject(CHARGE_POINT_REPOSITORY_TOKEN)
-    private readonly chargePointRepository: IChargePointRepository,
-  ) {}
-
   /**
-   * Execute: handle Heartbeat from ChargePoint.
+   * Execute: Handle Heartbeat message
    */
-  async execute(message: OcppMessage): Promise<Record<string, any>> {
-    if (!message.isCall()) {
-      this.logger.error('Heartbeat handler expects CALL message (type 2)');
-      throw new Error('Heartbeat handler expects CALL message (type 2)');
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
+    // Validate message is CALL
+    if (message.messageTypeId !== 2) {
+      this.logger.error('Heartbeat expects CALL (messageTypeId 2)');
+      return buildGenericError(context.messageId, 'Expected CALL message type');
     }
 
-    // Validate payload against OCPP schema (must be empty)
-    const schemaValidation = OcppSchema.validate('Heartbeat', message.payload);
-    if (!schemaValidation.valid) {
-      this.logger.warn(
-        `Heartbeat schema validation failed: ${schemaValidation.errors?.join('; ')}`,
-      );
-      return this.buildErrorResponse(
-        message.messageId,
-        'FormationViolation',
-        schemaValidation.errors?.join('; ') || 'Invalid heartbeat payload',
-      );
-    }
+    this.logger.log(`💓 Heartbeat from ${context.chargePointId}`);
 
-    // ChargePoint lookup
-    const chargePointId = message.payload.chargePointId || 'CP-UNKNOWN';
-    const chargePoint =
-      await this.chargePointRepository.findByChargePointId(chargePointId);
-
-    if (!chargePoint) {
-      this.logger.warn(`ChargePoint not found: ${chargePointId}`);
-      return this.buildErrorResponse(
-        message.messageId,
-        'GenericError',
-        `ChargePoint not found: ${chargePointId}`,
-      );
-    }
-
-    // Update lastHeartbeat timestamp
-    this.logger.debug(
-      `💓 Heartbeat received from ${chargePointId} at ${new Date().toISOString()}`,
-    );
-
-    // Return HeartbeatResponse [3, messageId, {currentTime}]
-    return [
-      3,
-      message.messageId,
-      {
-        currentTime: new Date().toISOString(),
-      },
-    ];
-  }
-
-  /**
-   * Build OCPP error response.
-   */
-  private buildErrorResponse(
-    messageId: string,
-    errorCode: string,
-    errorDescription: string,
-  ): Record<string, any> {
-    return [4, messageId, errorCode, errorDescription];
+    // Return current server time per OCPP 1.6 spec
+    return buildHeartbeatResponse(context.messageId);
   }
 }

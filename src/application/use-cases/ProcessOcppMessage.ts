@@ -1,21 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OcppMessage } from '../../domain/value-objects/OcppMessage';
-import { toOcppMessage, OcppMessageInput } from '../dto/OcppMessageInput';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
+import { OcppCallRequest, deserializeOcppMessage } from '../dto/OcppProtocol';
+import { buildNotImplemented } from '../dto/OcppResponseBuilders';
 import { HandleBootNotification } from './HandleBootNotification';
 import { HandleHeartbeat } from './HandleHeartbeat';
 import { HandleStatusNotification } from './HandleStatusNotification';
 
 /**
- * Use-Case: Process incoming OCPP message and route to handlers.
- *
- * Dispatcher Pattern:
- * 1. Parse incoming OCPP message
- * 2. Validate message format (OcppMessage)
- * 3. Lookup handler by action name
- * 4. Execute handler or return NotImplemented error
- *
- * CLEAN: Application layer orchestrates message routing.
- * SOLID: SRP - routes only, handlers in separate classes.
+ * Use-Case: OCPP Message Dispatcher
  */
 @Injectable()
 export class ProcessOcppMessage {
@@ -28,98 +20,58 @@ export class ProcessOcppMessage {
   ) {}
 
   /**
-   * Execute: process OCPP message and route to appropriate handler.
-   * 
-   * @param input Raw OCPP message input
-   * @param chargePointId From WebSocket context (query params)
+   * Execute: Route OCPP message to handler
+   *
+   * @param rawMessage Wire format [2, messageId, action, payload]
+   * @param context OCPP context (chargePointId, etc.)
+   * @returns Response in wire format [3, messageId, payload] or [4, messageId, error, msg] or ignored
    */
-  async execute(
-    input: OcppMessageInput,
-    chargePointId: string = 'CP-UNKNOWN',
-  ): Promise<Record<string, any>> {
-    const message = toOcppMessage(input);
-
-    // Only process CALL messages (requests from ChargePoint)
-    if (!message.isCall()) {
-      this.logger.debug(
-        `Non-CALL message type: ${message.messageTypeId} (ignored)`,
-      );
-      return { status: 'ignored' };
-    }
-
-    // Get handler for this action
-    const handler = this.getHandler(message.action);
-
-    if (!handler) {
-      this.logger.warn(
-        `No handler registered for action: ${message.action}`,
-      );
-      return this.buildErrorResponse(
-        message.messageId,
-        'NotImplemented',
-        `Handler for ${message.action} not implemented`,
-      );
-    }
-
+  async execute(rawMessage: any[], context: OcppContext): Promise<any[] | { status: string }> {
     try {
-      this.logger.debug(
-        `Processing ${message.action} (messageId: ${message.messageId})`,
-      );
-      // Execute handler
-      return await handler(message, chargePointId);
+      // Deserialize wire format to OcppMessage
+      const message = deserializeOcppMessage(rawMessage);
+
+      // Only process CALL messages
+      if (message.messageTypeId !== 2) {
+        this.logger.debug(`Non-CALL message (type ${message.messageTypeId}), ignoring`);
+        return { status: 'ignored' };
+      }
+
+      const callMessage = message as OcppCallRequest;
+
+      // Get handler for this action
+      const handler = this.getHandler(callMessage.action);
+      if (!handler) {
+        return buildNotImplemented(context.messageId, callMessage.action);
+      }
+
+      this.logger.debug(`Processing ${callMessage.action} from ${context.chargePointId}`);
+
+      // Execute handler and get response
+      const response = await handler(callMessage, context);
+
+      this.logger.debug(`Response sent: ${JSON.stringify(response)}`);
+
+      return response;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(
-        `Error processing ${message.action}: ${errorMessage}`,
-        error instanceof Error ? error.stack : '',
-      );
-      return this.buildErrorResponse(
-        message.messageId,
-        'InternalError',
-        errorMessage,
-      );
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Dispatcher error: ${msg}`, error instanceof Error ? error.stack : '');
+      return [4, context.messageId, 'InternalError', msg];
     }
   }
 
   /**
-   * Get handler function for specific OCPP action.
-   * 
-   * Handler Registry (extensible):
-   * - BootNotification: ChargePoint boot/registration (needs chargePointId)
-   * - Heartbeat: Keep-alive probe (no chargePointId needed in current impl)
-   * - StatusNotification: Connector status changes (needs chargePointId)
-   * - [Future handlers added here]
+   * Get handler for OCPP action
    */
   private getHandler(
     action: string,
-  ): ((msg: OcppMessage, cpId?: string) => Promise<Record<string, any>>) | null {
-    const handlers: Record<
-      string,
-      (msg: OcppMessage, cpId?: string) => Promise<Record<string, any>>
-    > = {
-      BootNotification: (msg, cpId) =>
-        this.handleBootNotification.execute(msg, cpId || 'CP-UNKNOWN'),
-      Heartbeat: (msg) =>
-        this.handleHeartbeat.execute(msg),
-      StatusNotification: (msg, cpId) =>
-        this.handleStatusNotification.execute(msg, cpId || 'CP-UNKNOWN'),
-      // [Future handlers]
-      // Authorize: (msg, cpId) => this.handleAuthorize.execute(msg, cpId),
-      // MeterValues: (msg, cpId) => this.handleMeterValues.execute(msg, cpId),
+  ): ((msg: OcppCallRequest, ctx: OcppContext) => Promise<any[]>) | null {
+    const handlers: Record<string, (msg: OcppCallRequest, ctx: OcppContext) => Promise<any[]>> = {
+      BootNotification: (msg, ctx) => this.handleBootNotification.execute(msg, ctx),
+      Heartbeat: (msg, ctx) => this.handleHeartbeat.execute(msg, ctx),
+      StatusNotification: (msg, ctx) => this.handleStatusNotification.execute(msg, ctx),
     };
 
     return handlers[action] || null;
-  }
-
-  /**
-   * Build OCPP error response [4, messageId, errorCode, errorMessage].
-   */
-  private buildErrorResponse(
-    messageId: string,
-    errorCode: string,
-    errorMessage: string,
-  ): Record<string, any> {
-    return [4, messageId, errorCode, errorMessage];
   }
 }

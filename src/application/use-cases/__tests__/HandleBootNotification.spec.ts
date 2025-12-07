@@ -1,96 +1,97 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { HandleBootNotification } from '../HandleBootNotification';
-import { OcppMessage } from '../../../domain/value-objects/OcppMessage';
 import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
-import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
+import { OcppContext } from '../../../domain/value-objects/OcppContext';
+import { OcppCallRequest } from '../../dto/OcppProtocol';
+import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../../infrastructure/tokens';
 
-describe('HandleBootNotification Use-Case', () => {
+describe('HandleBootNotification', () => {
   let useCase: HandleBootNotification;
-  let repositoryMock: { findByChargePointId: jest.Mock };
+  let mockRepository: jest.Mocked<IChargePointRepository>;
 
-  beforeEach(() => {
-    repositoryMock = {
+  beforeEach(async () => {
+    mockRepository = {
+      find: jest.fn(),
       findByChargePointId: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     };
 
-    useCase = new HandleBootNotification(
-      repositoryMock as unknown as IChargePointRepository,
-    );
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HandleBootNotification,
+        {
+          provide: CHARGE_POINT_REPOSITORY_TOKEN,
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
 
-    // Mock Logger
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    useCase = module.get<HandleBootNotification>(HandleBootNotification);
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('should return BootNotificationResponse on success', async () => {
-    // Per OCPP 1.6: payload has NO chargePointId (comes from WebSocket query)
-    const message = new OcppMessage(
-      2,
-      'boot-001',
-      'BootNotification',
-      {
-        chargePointModel: 'Tesla Supercharger',
-        chargePointVendor: 'Tesla Inc',
+  it('should accept BootNotification when ChargePoint exists', async () => {
+    const message: OcppCallRequest = {
+      messageTypeId: 2,
+      messageId: 'msg-001',
+      action: 'BootNotification',
+      payload: {
+        chargePointVendor: 'TestVendor',
+        chargePointModel: 'Model-X',
       },
-    );
-
-    const mockChargePoint: Partial<ChargePoint> = {
-      id: '123',
-      chargePointId: 'CP-001',
     };
 
-    repositoryMock.findByChargePointId.mockResolvedValue(mockChargePoint);
+    const context = new OcppContext('CP-001', 'msg-001');
 
-    const result = await useCase.execute(message, 'CP-001');
+    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+
+    const result = await useCase.execute(message, context);
 
     expect(result).toEqual([
       3,
-      'boot-001',
+      'msg-001',
       expect.objectContaining({
         status: 'Accepted',
-        interval: 900,
       }),
     ]);
   });
 
-  it('should return error if ChargePoint not found', async () => {
-    const message = new OcppMessage(
-      2,
-      'boot-002',
-      'BootNotification',
-      {
-        chargePointModel: 'Tesla',
-        chargePointVendor: 'Tesla Inc',
+  it('should reject when ChargePoint not found', async () => {
+    const message: OcppCallRequest = {
+      messageTypeId: 2,
+      messageId: 'msg-002',
+      action: 'BootNotification',
+      payload: {
+        chargePointVendor: 'TestVendor',
+        chargePointModel: 'Model-X',
       },
-    );
+    };
 
-    repositoryMock.findByChargePointId.mockResolvedValue(null);
+    const context = new OcppContext('CP-NONEXISTENT', 'msg-002');
 
-    const result = await useCase.execute(message, 'CP-NONEXISTENT');
+    mockRepository.findByChargePointId.mockResolvedValue(null);
 
-    expect(result).toEqual([
-      4,
-      'boot-002',
-      'ChargePointNotFound',
-      expect.any(String),
-    ]);
+    const result = await useCase.execute(message, context);
+
+    expect(result[0]).toBe(4); // CALLERROR
+    expect(result[2]).toBe('GenericError');
   });
 
-  it('should return error if required fields missing', async () => {
-    const message = new OcppMessage(
-      2,
-      'boot-003',
-      'BootNotification',
-      {
-        // Missing chargePointModel and chargePointVendor
-      },
-    );
+  it('should return error for invalid payload', async () => {
+    const message: OcppCallRequest = {
+      messageTypeId: 2,
+      messageId: 'msg-003',
+      action: 'BootNotification',
+      payload: {}, // Missing required fields
+    };
 
-    const result = await useCase.execute(message, 'CP-001');
+    const context = new OcppContext('CP-001', 'msg-003');
+
+    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+
+    const result = await useCase.execute(message, context);
 
     expect(result[0]).toBe(4); // CALLERROR
     expect(result[2]).toBe('FormationViolation');

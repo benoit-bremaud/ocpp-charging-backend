@@ -14,9 +14,7 @@ describe('CreateChargePoint Use-Case', () => {
       create: jest.fn(),
     };
 
-    useCase = new CreateChargePoint(
-      repositoryMock as unknown as IChargePointRepository,
-    );
+    useCase = new CreateChargePoint(repositoryMock as unknown as IChargePointRepository);
   });
 
   const validInput: CreateChargePointInput = {

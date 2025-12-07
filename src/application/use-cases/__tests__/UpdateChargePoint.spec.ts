@@ -13,9 +13,7 @@ describe('UpdateChargePoint Use-Case', () => {
       update: jest.fn(),
     };
 
-    useCase = new UpdateChargePoint(
-      repositoryMock as unknown as IChargePointRepository,
-    );
+    useCase = new UpdateChargePoint(repositoryMock as unknown as IChargePointRepository);
   });
 
   it('should update a ChargePoint with valid input', async () => {
@@ -44,9 +42,7 @@ describe('UpdateChargePoint Use-Case', () => {
 
     const result = await useCase.execute(chargePointId, input);
 
-    expect(repositoryMock.findByChargePointId).toHaveBeenCalledWith(
-      chargePointId,
-    );
+    expect(repositoryMock.findByChargePointId).toHaveBeenCalledWith(chargePointId);
     expect(repositoryMock.update).toHaveBeenCalledWith(
       '123',
       expect.objectContaining({
@@ -60,8 +56,8 @@ describe('UpdateChargePoint Use-Case', () => {
   it('should throw if chargePointId not found', async () => {
     repositoryMock.findByChargePointId.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute('CP-NONEXISTENT', { chargePointModel: 'X' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute('CP-NONEXISTENT', { chargePointModel: 'X' })).rejects.toThrow(
+      'not found',
+    );
   });
 });

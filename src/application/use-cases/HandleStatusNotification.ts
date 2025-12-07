@@ -1,21 +1,24 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { OcppMessage } from '../../domain/value-objects/OcppMessage';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
 import { OcppSchema } from '../../domain/value-objects/OcppSchema';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
+import { OcppCallRequest } from '../dto/OcppProtocol';
+import {
+  buildStatusNotificationResponse,
+  buildFormationViolation,
+  buildGenericError,
+} from '../dto/OcppResponseBuilders';
 
 /**
- * Use-Case: Handle OCPP StatusNotification message.
+ * Use-Case: Handle StatusNotification (OCPP 1.6 Compliant)
  *
- * OCPP 1.6 Spec:
- * - ChargePoint reports connector status change
- * - connectorId: connector identifier (0 = charger, 1+ = outlets)
- * - errorCode: error condition (NoError, ConnectorLockFailure, etc.)
- * - status: connector state (Available, Occupied, Reserved, Unavailable, Faulted)
- * - Response: [3, messageId, {}] (empty object)
+ * Input:  [2, messageId, "StatusNotification", {connectorId, errorCode, status, timestamp}]
+ * Output: [3, messageId, {}]
+ * Error:  [4, messageId, errorCode, description]
  *
- * CLEAN: Application layer handles business logic.
- * SOLID: DIP - depends on repository abstraction.
+ * CLEAN: Pure business logic
+ * OCPP:  Strict schema validation (enum values)
  */
 @Injectable()
 export class HandleStatusNotification {
@@ -27,76 +30,46 @@ export class HandleStatusNotification {
   ) {}
 
   /**
-   * Execute: handle StatusNotification from ChargePoint.
-   * 
-   * @param message OCPP message
-   * @param chargePointId From WebSocket query params
+   * Execute: Handle StatusNotification message
    */
-  async execute(
-    message: OcppMessage,
-    chargePointId: string = 'CP-UNKNOWN',
-  ): Promise<Record<string, any>> {
-    if (!message.isCall()) {
-      this.logger.error('StatusNotification handler expects CALL message');
-      throw new Error('StatusNotification handler expects CALL message');
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
+    // Validate message is CALL
+    if (message.messageTypeId !== 2) {
+      this.logger.error('StatusNotification expects CALL (messageTypeId 2)');
+      return buildGenericError(context.messageId, 'Expected CALL message type');
     }
 
-    // Validate payload against OCPP schema
-    const schemaValidation = OcppSchema.validate(
-      'StatusNotification',
-      message.payload,
-    );
-    if (!schemaValidation.valid) {
-      this.logger.warn(
-        `StatusNotification schema validation failed: ${schemaValidation.errors?.join('; ')}`,
+    // Validate payload against OCPP 1.6 schema
+    const validation = OcppSchema.validate('StatusNotification', message.payload);
+    if (!validation.valid) {
+      this.logger.warn(`StatusNotification validation failed: ${validation.errors?.join('; ')}`);
+      return buildFormationViolation(
+        context.messageId,
+        validation.errors?.join('; ') || 'Schema validation failed',
       );
-      return this.buildErrorResponse(
-        message.messageId,
-        'FormationViolation',
-        `Schema validation failed: ${schemaValidation.errors?.join('; ') || 'Unknown error'}`,
-      );
+    }
+
+    // Find ChargePoint
+    const chargePoint = await this.chargePointRepository.findByChargePointId(context.chargePointId);
+
+    if (!chargePoint) {
+      return buildGenericError(context.messageId, `ChargePoint ${context.chargePointId} not found`);
     }
 
     // Extract status info
-    const { connectorId, errorCode, status, timestamp, vendorId, vendorErrorCode } =
-      message.payload;
+    const { connectorId, errorCode, status, timestamp } = message.payload;
 
-    // Find ChargePoint
-    const chargePoint =
-      await this.chargePointRepository.findByChargePointId(chargePointId);
-
-    if (!chargePoint) {
-      this.logger.warn(`ChargePoint not found: ${chargePointId}`);
-      return this.buildErrorResponse(
-        message.messageId,
-        'GenericError',
-        `ChargePoint not found: ${chargePointId}`,
-      );
-    }
-
-    // Log status change
+    // Business Logic: Update connector status
     this.logger.log(
-      `📊 Status update: ${chargePointId} connector ${connectorId} → ${status} (${errorCode})`,
+      `📊 Status: ${context.chargePointId} connector ${connectorId} → ${status} (${errorCode})`,
     );
 
-    // TODO: In STEP 13+, update Connector entity
-    // - Create/update Connector record
-    // - Store status history
-    // - Trigger frontend broadcasts
+    // Log status change with error code (for monitoring/alerting)
+    if (errorCode !== 'NoError') {
+      this.logger.warn(`Connector error detected: ${errorCode} at ${timestamp}`);
+    }
 
-    // Return StatusNotificationResponse [3, messageId, {}]
-    // Per OCPP 1.6: response is empty object
-    return [3, message.messageId, {}];
-  }
-
-  /**
-   * Build OCPP error response.
-   */
-  private buildErrorResponse(
-    messageId: string,
-    errorCode: string,
-    errorDescription: string,
-  ): Record<string, any> {
-    return [4, messageId, errorCode, errorDescription];
+    // Build CALLRESULT response per OCPP 1.6 spec (empty payload)
+    return buildStatusNotificationResponse(context.messageId);
   }
 }

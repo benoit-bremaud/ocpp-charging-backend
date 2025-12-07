@@ -7,27 +7,27 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable, Logger } from '@nestjs/common';
+import { ProcessOcppMessage } from '../../application/use-cases/ProcessOcppMessage';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
 
 /**
- * Infrastructure Layer: WebSocket adapter for real-time ChargePoint communication.
+ * Infrastructure: WebSocket Gateway
  *
- * CLEAN: Gateway = transport adapter (WebSocket), no business logic.
- * SOLID: SRP - only handles WebSocket events, delegates to service.
+ * Receives OCPP messages from ChargePoints via WebSocket
+ * Routes to ProcessOcppMessage dispatcher
+ * Sends responses back to ChargePoint
  *
- * STEP 10: NestJS 11 WebSocket Gateway - ACTIVE
+ * Per OCPP 1.6:
+ * - Client sends: [2, messageId, action, payload]
+ * - Server responds: [3, messageId, payload] or [4, messageId, error, msg]
  */
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
+  cors: { origin: '*', methods: ['GET', 'POST'] },
   namespace: 'charge-points',
   transports: ['websocket'],
 })
 @Injectable()
-export class ChargePointGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class ChargePointGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private logger = new Logger('ChargePointGateway');
 
   @WebSocketServer()
@@ -35,8 +35,10 @@ export class ChargePointGateway
 
   private connectedClients: Map<string, Socket> = new Map();
 
+  constructor(private readonly processOcppMessage: ProcessOcppMessage) {}
+
   /**
-   * Handle client connection.
+   * Handle client connection
    */
   handleConnection(client: Socket): void {
     const chargePointId = client.handshake.query.chargePointId as string;
@@ -44,76 +46,103 @@ export class ChargePointGateway
     if (chargePointId) {
       this.connectedClients.set(chargePointId, client);
       this.logger.log(`✅ ChargePoint connected: ${chargePointId}`);
-      this.server.emit('charge-point:connected', { chargePointId });
+      this.server.emit('chargepoint:connected', { chargePointId });
     } else {
-      this.logger.warn('Connection rejected: no chargePointId provided');
+      this.logger.warn('Connection rejected: missing chargePointId');
       client.disconnect();
     }
   }
 
   /**
-   * Handle client disconnection.
+   * Handle client disconnection
    */
   handleDisconnect(client: Socket): void {
-    const chargePointId = Array.from(this.connectedClients.entries())
-      .find(([, socket]) => socket === client)?.[0];
+    const cpId = Array.from(this.connectedClients.entries()).find(
+      ([, socket]) => socket === client,
+    )?.[0];
 
-    if (chargePointId) {
-      this.connectedClients.delete(chargePointId);
-      this.logger.log(`❌ ChargePoint disconnected: ${chargePointId}`);
-      this.server.emit('charge-point:disconnected', { chargePointId });
+    if (cpId) {
+      this.connectedClients.delete(cpId);
+      this.logger.log(`❌ ChargePoint disconnected: ${cpId}`);
+      this.server.emit('chargepoint:disconnected', { chargePointId: cpId });
     }
   }
 
   /**
-   * Listen for incoming OCPP messages from ChargePoint.
+   * Handle incoming OCPP message
+   *
+   * Format: [2, messageId, "Action", {payload}]
    */
   @SubscribeMessage('ocpp:message')
-  handleOcppMessage(client: Socket, data: any): void {
+  async handleOcppMessage(client: Socket, data: any[]): Promise<void> {
     const chargePointId = client.handshake.query.chargePointId as string;
-    this.logger.debug(
-      `📨 OCPP message from ${chargePointId}: ${JSON.stringify(data)}`,
-    );
+    const sourceIp = client.handshake.address;
 
-    this.server.emit('ocpp:message', {
-      chargePointId,
-      payload: data,
-      timestamp: new Date(),
-    });
-  }
+    try {
+      // Extract messageId from wire format [2, messageId, ...]
+      const messageId = data[1];
 
-  /**
-   * Broadcast ChargePoint status change to all connected clients.
-   */
-  broadcastChargePointStatus(chargePointId: string, status: string): void {
-    this.logger.log(`📡 Status update: ${chargePointId} → ${status}`);
-    this.server.emit('charge-point:status-changed', {
-      chargePointId,
-      status,
-      timestamp: new Date(),
-    });
-  }
+      // Create OCPP context
+      const context = new OcppContext(chargePointId, messageId, sourceIp);
 
-  /**
-   * Send message to specific ChargePoint.
-   */
-  sendToChargePoint(chargePointId: string, message: any): void {
-    const socket = this.connectedClients.get(chargePointId);
+      // Route to dispatcher
+      const response = await this.processOcppMessage.execute(data, context);
 
-    if (socket) {
-      socket.emit('ocpp:command', message);
-      this.logger.debug(
-        `🚀 Command sent to ${chargePointId}: ${JSON.stringify(message)}`,
-      );
-    } else {
-      this.logger.warn(`⚠️ ChargePoint not connected: ${chargePointId}`);
+      // Send response back to ChargePoint per OCPP 1.6
+      // Response format: [3, messageId, payload] or [4, messageId, error, msg]
+      client.emit('ocpp:response', response);
+
+      // Broadcast event to monitoring clients
+      this.server.emit('ocpp:message:received', {
+        chargePointId,
+        messageId,
+        timestamp: new Date(),
+      });
+
+      this.logger.debug(`✅ Response sent to ${chargePointId}`);
+    } catch (error) {
+      this.logger.error(`Message processing error from ${chargePointId}: ${error}`);
+      client.emit('ocpp:error', {
+        message: 'Internal server error',
+      });
     }
   }
 
   /**
-   * Get all connected ChargePoints.
+   * Send command to specific ChargePoint (Server → Client)
+   *
+   * This is for server-initiated messages (push commands)
+   * Format: [2, messageId, "Action", {payload}]
+   */
+  sendCommandToChargePoint(
+    chargePointId: string,
+    messageId: string,
+    action: string,
+    payload: Record<string, any>,
+  ): boolean {
+    const socket = this.connectedClients.get(chargePointId);
+    if (!socket) {
+      this.logger.warn(`ChargePoint not connected: ${chargePointId}`);
+      return false;
+    }
+
+    const command = [2, messageId, action, payload];
+    socket.emit('ocpp:command', command);
+    this.logger.log(`📤 Command sent to ${chargePointId}: ${action}`);
+    return true;
+  }
+
+  /**
+   * Get all connected ChargePoints
    */
   getConnectedChargePoints(): string[] {
     return Array.from(this.connectedClients.keys());
+  }
+
+  /**
+   * Check if ChargePoint is connected
+   */
+  isConnected(chargePointId: string): boolean {
+    return this.connectedClients.has(chargePointId);
   }
 }

@@ -16,10 +16,7 @@ export interface OcppSchemaDefinition {
 }
 
 export class OcppSchema {
-  private static readonly SCHEMAS: Record<
-    string,
-    OcppSchemaDefinition
-  > = {
+  private static readonly SCHEMAS: Record<string, OcppSchemaDefinition> = {
     BootNotification: {
       type: 'object',
       properties: {
@@ -48,32 +45,32 @@ export class OcppSchema {
       type: 'object',
       properties: {
         connectorId: { type: 'integer', minimum: 0 },
-        errorCode: { type: 'string', enum: [
-          'NoError',
-          'ConnectorLockFailure',
-          'EVCommunicationError',
-          'GroundFailure',
-          'HighVoltage',
-          'InternalError',
-          'LocalListConflict',
-          'LowVoltage',
-          'NoContactorError',
-          'OtherError',
-          'OverCurrentFailure',
-          'PowerMeterFailure',
-          'PowerSwitchFailure',
-          'ReaderErrorEvent',
-          'ResetFailure',
-          'UnderVoltage',
-          'WeakSignal',
-        ]},
-        status: { type: 'string', enum: [
-          'Available',
-          'Occupied',
-          'Reserved',
-          'Unavailable',
-          'Faulted',
-        ]},
+        errorCode: {
+          type: 'string',
+          enum: [
+            'NoError',
+            'ConnectorLockFailure',
+            'EVCommunicationError',
+            'GroundFailure',
+            'HighVoltage',
+            'InternalError',
+            'LocalListConflict',
+            'LowVoltage',
+            'NoContactorError',
+            'OtherError',
+            'OverCurrentFailure',
+            'PowerMeterFailure',
+            'PowerSwitchFailure',
+            'ReaderErrorEvent',
+            'ResetFailure',
+            'UnderVoltage',
+            'WeakSignal',
+          ],
+        },
+        status: {
+          type: 'string',
+          enum: ['Available', 'Occupied', 'Reserved', 'Unavailable', 'Faulted'],
+        },
         timestamp: { type: 'string', format: 'date-time' },
         vendorId: { type: 'string', maxLength: 255 },
         vendorErrorCode: { type: 'string', maxLength: 50 },
@@ -112,9 +109,7 @@ export class OcppSchema {
     if (!schema.additionalProperties) {
       for (const key of Object.keys(payload)) {
         if (!(key in schema.properties)) {
-          errors.push(
-            `Additional property not allowed: ${key}`,
-          );
+          errors.push(`Additional property not allowed: ${key}`);
         }
       }
     }
@@ -127,50 +122,36 @@ export class OcppSchema {
 
       // Type check
       if (propSchema.type === 'integer' && typeof value !== 'number') {
-        errors.push(
-          `Field '${key}' must be integer, got: ${typeof value}`,
-        );
+        errors.push(`Field '${key}' must be integer, got: ${typeof value}`);
       } else if (propSchema.type === 'string' && typeof value !== 'string') {
-        errors.push(
-          `Field '${key}' must be string, got: ${typeof value}`,
-        );
+        errors.push(`Field '${key}' must be string, got: ${typeof value}`);
       } else if (propSchema.type === 'object' && typeof value !== 'object') {
-        errors.push(
-          `Field '${key}' must be object, got: ${typeof value}`,
-        );
+        errors.push(`Field '${key}' must be object, got: ${typeof value}`);
       }
 
       // Enum check
       if (propSchema.enum && !propSchema.enum.includes(value)) {
-        errors.push(
-          `Field '${key}' must be one of [${propSchema.enum.join(', ')}], got: ${value}`,
-        );
+        errors.push(`Field '${key}' must be one of [${propSchema.enum.join(', ')}], got: ${value}`);
       }
 
       // String length check
       if (propSchema.maxLength && typeof value === 'string') {
         if (value.length > propSchema.maxLength) {
-          errors.push(
-            `Field '${key}' exceeds max length ${propSchema.maxLength}`,
-          );
+          errors.push(`Field '${key}' exceeds max length ${propSchema.maxLength}`);
         }
       }
 
       // Integer range check
       if (propSchema.minimum !== undefined && typeof value === 'number') {
         if (value < propSchema.minimum) {
-          errors.push(
-            `Field '${key}' must be >= ${propSchema.minimum}, got: ${value}`,
-          );
+          errors.push(`Field '${key}' must be >= ${propSchema.minimum}, got: ${value}`);
         }
       }
 
       // ISO 8601 timestamp check
       if (propSchema.format === 'date-time' && typeof value === 'string') {
         if (!this.isValidIso8601(value)) {
-          errors.push(
-            `Field '${key}' must be ISO 8601 timestamp, got: ${value}`,
-          );
+          errors.push(`Field '${key}' must be ISO 8601 timestamp, got: ${value}`);
         }
       }
     }

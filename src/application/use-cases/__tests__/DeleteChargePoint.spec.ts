@@ -12,9 +12,7 @@ describe('DeleteChargePoint Use-Case', () => {
       delete: jest.fn(),
     };
 
-    useCase = new DeleteChargePoint(
-      repositoryMock as unknown as IChargePointRepository,
-    );
+    useCase = new DeleteChargePoint(repositoryMock as unknown as IChargePointRepository);
   });
 
   it('should delete a ChargePoint with valid id', async () => {
@@ -36,14 +34,10 @@ describe('DeleteChargePoint Use-Case', () => {
   it('should throw if id not found', async () => {
     repositoryMock.find.mockResolvedValue(null);
 
-    await expect(useCase.execute('NONEXISTENT')).rejects.toThrow(
-      'not found',
-    );
+    await expect(useCase.execute('NONEXISTENT')).rejects.toThrow('not found');
   });
 
   it('should throw if id is empty', async () => {
-    await expect(useCase.execute('   ')).rejects.toThrow(
-      'id must not be empty',
-    );
+    await expect(useCase.execute('   ')).rejects.toThrow('id must not be empty');
   });
 });

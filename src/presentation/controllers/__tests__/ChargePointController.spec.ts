@@ -73,9 +73,7 @@ describe('ChargePointController', () => {
 
   describe('getAllChargePoints', () => {
     it('should return list of ChargePoints', async () => {
-      const mockChargePoints: Partial<ChargePoint>[] = [
-        { id: '1', chargePointId: 'CP-001' },
-      ];
+      const mockChargePoints: Partial<ChargePoint>[] = [{ id: '1', chargePointId: 'CP-001' }];
 
       findAllUseCase.execute.mockResolvedValue(mockChargePoints);
 

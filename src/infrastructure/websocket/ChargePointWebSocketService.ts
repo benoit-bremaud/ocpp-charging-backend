@@ -1,49 +1,65 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ChargePointGateway } from './ChargePointGateway';
-import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../tokens';
 
 /**
- * Application Layer: WebSocket service (DISABLED for now).
- * Will route OCPP messages via REST endpoints instead.
+ * Service: ChargePoint WebSocket Operations
+ *
+ * Orchestrates WebSocket communication with ChargePoints
+ * Per CLEAN architecture: Orchestration layer (Use-case adjacent)
  */
 @Injectable()
 export class ChargePointWebSocketService {
-  constructor(
-    private readonly chargePointGateway: ChargePointGateway,
-    @Inject(CHARGE_POINT_REPOSITORY_TOKEN)
-    private readonly chargePointRepository: IChargePointRepository,
-  ) {}
+  private logger = new Logger('ChargePointWebSocketService');
 
-  async notifyChargePointOnline(chargePointId: string): Promise<void> {
-    const chargePoint =
-      await this.chargePointRepository.findByChargePointId(chargePointId);
+  constructor(private readonly chargePointGateway: ChargePointGateway) {}
 
-    if (chargePoint) {
-      this.chargePointGateway.broadcastChargePointStatus(
-        chargePointId,
-        'ONLINE',
-      );
-    }
+  /**
+   * Notify ChargePoint came online
+   * TODO: Implement broadcast to monitoring clients
+   */
+  notifyChargePointOnline(chargePointId: string): void {
+    this.logger.log(`✅ ChargePoint ${chargePointId} is ONLINE`);
+    // Future: Broadcast to monitoring dashboard
   }
 
-  async notifyChargePointOffline(chargePointId: string): Promise<void> {
-    const chargePoint =
-      await this.chargePointRepository.findByChargePointId(chargePointId);
-
-    if (chargePoint) {
-      this.chargePointGateway.broadcastChargePointStatus(
-        chargePointId,
-        'OFFLINE',
-      );
-    }
+  /**
+   * Notify ChargePoint went offline
+   * TODO: Implement broadcast to monitoring clients
+   */
+  notifyChargePointOffline(chargePointId: string): void {
+    this.logger.log(`🔌 ChargePoint ${chargePointId} is OFFLINE`);
+    // Future: Broadcast to monitoring dashboard
   }
 
+  /**
+   * Send command to specific ChargePoint
+   */
+  sendCommandToChargePoint(
+    chargePointId: string,
+    messageId: string,
+    action: string,
+    payload: Record<string, any>,
+  ): boolean {
+    this.logger.debug(`Sending ${action} to ${chargePointId}`);
+    return this.chargePointGateway.sendCommandToChargePoint(
+      chargePointId,
+      messageId,
+      action,
+      payload,
+    );
+  }
+
+  /**
+   * Check if ChargePoint is connected
+   */
+  isChargePointConnected(chargePointId: string): boolean {
+    return this.chargePointGateway.isConnected(chargePointId);
+  }
+
+  /**
+   * Get list of connected ChargePoints
+   */
   getConnectedChargePoints(): string[] {
     return this.chargePointGateway.getConnectedChargePoints();
-  }
-
-  sendCommandToChargePoint(chargePointId: string, command: any): void {
-    this.chargePointGateway.sendToChargePoint(chargePointId, command);
   }
 }

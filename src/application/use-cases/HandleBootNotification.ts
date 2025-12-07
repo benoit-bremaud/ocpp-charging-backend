@@ -1,19 +1,17 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { OcppMessage } from '../../domain/value-objects/OcppMessage';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
 import { OcppSchema } from '../../domain/value-objects/OcppSchema';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
+import { OcppCallRequest } from '../dto/OcppProtocol';
+import {
+  buildBootNotificationResponse,
+  buildFormationViolation,
+  buildGenericError,
+} from '../dto/OcppResponseBuilders';
 
 /**
- * Use-Case: Handle OCPP BootNotification message.
- *
- * OCPP 1.6 Spec:
- * - ChargePoint announces itself after power-on
- * - chargePointId comes from WebSocket query params (NOT payload)
- * - Response: [3, messageId, {status, currentTime, interval}]
- *
- * CLEAN: Application layer handles business logic.
- * SOLID: DIP - depends on repository abstraction.
+ * Use-Case: Handle BootNotification (OCPP 1.6 Compliant)
  */
 @Injectable()
 export class HandleBootNotification {
@@ -24,70 +22,30 @@ export class HandleBootNotification {
     private readonly chargePointRepository: IChargePointRepository,
   ) {}
 
-  /**
-   * Execute: handle BootNotification from ChargePoint.
-   * 
-   * @param message OCPP message
-   * @param chargePointId From WebSocket query params
-   */
-  async execute(
-    message: OcppMessage,
-    chargePointId: string = 'CP-UNKNOWN',
-  ): Promise<Record<string, any>> {
-    if (!message.isCall()) {
-      this.logger.error('BootNotification handler expects CALL message');
-      throw new Error('BootNotification handler expects CALL message');
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
+    if (message.messageTypeId !== 2) {
+      this.logger.error('BootNotification expects CALL (messageTypeId 2)');
+      return buildGenericError(context.messageId, 'Expected CALL message type');
     }
 
-    // Validate payload against OCPP schema
-    const schemaValidation = OcppSchema.validate('BootNotification', message.payload);
-    if (!schemaValidation.valid) {
-      this.logger.warn(
-        `BootNotification schema validation failed: ${schemaValidation.errors?.join('; ')}`,
-      );
-      return this.buildErrorResponse(
-        message.messageId,
-        'FormationViolation',
-        `Schema validation failed: ${schemaValidation.errors?.join('; ') || 'Unknown error'}`,
+    const validation = OcppSchema.validate('BootNotification', message.payload);
+    if (!validation.valid) {
+      this.logger.warn(`BootNotification validation failed: ${validation.errors?.join('; ')}`);
+      return buildFormationViolation(
+        context.messageId,
+        validation.errors?.join('; ') || 'Schema validation failed',
       );
     }
 
-    // Find ChargePoint by ID from WebSocket
-    const chargePoint =
-      await this.chargePointRepository.findByChargePointId(chargePointId);
+    const chargePoint = await this.chargePointRepository.findByChargePointId(context.chargePointId);
 
     if (!chargePoint) {
-      this.logger.warn(`ChargePoint not found: ${chargePointId}`);
-      return this.buildErrorResponse(
-        message.messageId,
-        'ChargePointNotFound',
-        `ChargePoint not found: ${chargePointId}`,
-      );
+      this.logger.warn(`ChargePoint not found: ${context.chargePointId}`);
+      return buildGenericError(context.messageId, `ChargePoint ${context.chargePointId} not found`);
     }
 
-    // Mark as ONLINE
-    this.logger.log(`✅ ChargePoint online: ${chargePointId}`);
+    this.logger.log(`✅ BootNotification accepted from ${context.chargePointId}`);
 
-    // Return BootNotificationResponse [3, messageId, response]
-    return [
-      3,
-      message.messageId,
-      {
-        currentTime: new Date().toISOString(),
-        interval: 900,
-        status: 'Accepted',
-      },
-    ];
-  }
-
-  /**
-   * Build error response [4, messageId, errorCode, errorDescription].
-   */
-  private buildErrorResponse(
-    messageId: string,
-    errorCode: string,
-    errorDescription: string,
-  ): Record<string, any> {
-    return [4, messageId, errorCode, errorDescription];
+    return buildBootNotificationResponse(context.messageId, 'Accepted', 900);
   }
 }

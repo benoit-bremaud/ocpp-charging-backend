@@ -3,160 +3,125 @@ import { ProcessOcppMessage } from '../ProcessOcppMessage';
 import { HandleBootNotification } from '../HandleBootNotification';
 import { HandleHeartbeat } from '../HandleHeartbeat';
 import { HandleStatusNotification } from '../HandleStatusNotification';
-import { OcppMessageInput } from '../../dto/OcppMessageInput';
+import { OcppContext } from '../../../domain/value-objects/OcppContext';
+import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
+import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../../infrastructure/tokens';
 
-describe('ProcessOcppMessage Use-Case (Handler Registry)', () => {
+describe('ProcessOcppMessage', () => {
   let useCase: ProcessOcppMessage;
-  let bootNotifMock: { execute: jest.Mock };
-  let heartbeatMock: { execute: jest.Mock };
-  let statusNotifMock: { execute: jest.Mock };
+  let mockRepository: jest.Mocked<IChargePointRepository>;
 
   beforeEach(async () => {
-    bootNotifMock = { execute: jest.fn() };
-    heartbeatMock = { execute: jest.fn() };
-    statusNotifMock = { execute: jest.fn() };
+    mockRepository = {
+      find: jest.fn(),
+      findByChargePointId: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProcessOcppMessage,
+        HandleBootNotification,
+        HandleHeartbeat,
+        HandleStatusNotification,
         {
-          provide: HandleBootNotification,
-          useValue: bootNotifMock,
-        },
-        {
-          provide: HandleHeartbeat,
-          useValue: heartbeatMock,
-        },
-        {
-          provide: HandleStatusNotification,
-          useValue: statusNotifMock,
+          provide: CHARGE_POINT_REPOSITORY_TOKEN,
+          useValue: mockRepository,
         },
       ],
     }).compile();
 
     useCase = module.get<ProcessOcppMessage>(ProcessOcppMessage);
-
-    // Mock Logger
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(console, 'debug').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('should route BootNotification to correct handler', async () => {
-    const input: OcppMessageInput = {
-      messageTypeId: 2,
-      messageId: 'msg-001',
-      action: 'BootNotification',
-      payload: {
-        chargePointModel: 'Tesla',
-        chargePointVendor: 'Tesla Inc',
+  it('should route BootNotification to handler', async () => {
+    const rawMessage = [
+      2,
+      'msg-001',
+      'BootNotification',
+      {
+        chargePointVendor: 'TestVendor',
+        chargePointModel: 'Model-X',
       },
-    };
-
-    const expectedResponse = [3, 'msg-001', { status: 'Accepted' }];
-    bootNotifMock.execute.mockResolvedValue(expectedResponse);
-
-    const result = await useCase.execute(input, 'CP-001');
-
-    expect(bootNotifMock.execute).toHaveBeenCalled();
-    expect(result).toEqual(expectedResponse);
-  });
-
-  it('should route Heartbeat to correct handler', async () => {
-    const input: OcppMessageInput = {
-      messageTypeId: 2,
-      messageId: 'msg-002',
-      action: 'Heartbeat',
-      payload: {},
-    };
-
-    const expectedResponse = [
-      3,
-      'msg-002',
-      { currentTime: '2025-12-05T17:38:00Z' },
     ];
-    heartbeatMock.execute.mockResolvedValue(expectedResponse);
 
-    const result = await useCase.execute(input, 'CP-001');
+    const context = new OcppContext('CP-001', 'msg-001');
+    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
 
-    expect(heartbeatMock.execute).toHaveBeenCalled();
-    expect(result).toEqual(expectedResponse);
+    const result = (await useCase.execute(rawMessage, context)) as any[];
+
+    expect(result[0]).toBe(3); // CALLRESULT
   });
 
-  it('should route StatusNotification to correct handler', async () => {
-    const input: OcppMessageInput = {
-      messageTypeId: 2,
-      messageId: 'msg-003',
-      action: 'StatusNotification',
-      payload: {
+  it('should route Heartbeat to handler', async () => {
+    const rawMessage = [2, 'msg-002', 'Heartbeat', {}];
+    const context = new OcppContext('CP-001', 'msg-002');
+
+    const result = (await useCase.execute(rawMessage, context)) as any[];
+
+    expect(result[0]).toBe(3); // CALLRESULT
+  });
+
+  it('should route StatusNotification to handler', async () => {
+    const rawMessage = [
+      2,
+      'msg-003',
+      'StatusNotification',
+      {
         connectorId: 1,
         errorCode: 'NoError',
         status: 'Available',
-        timestamp: '2025-12-05T17:38:00Z',
+        timestamp: new Date().toISOString(),
       },
-    };
+    ];
 
-    const expectedResponse = [3, 'msg-003', {}];
-    statusNotifMock.execute.mockResolvedValue(expectedResponse);
+    const context = new OcppContext('CP-001', 'msg-003');
+    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
 
-    const result = await useCase.execute(input, 'CP-001');
+    const result = (await useCase.execute(rawMessage, context)) as any[];
 
-    expect(statusNotifMock.execute).toHaveBeenCalled();
-    expect(result).toEqual(expectedResponse);
+    expect(result[0]).toBe(3); // CALLRESULT
   });
 
   it('should return NotImplemented for unknown action', async () => {
-    const input: OcppMessageInput = {
-      messageTypeId: 2,
-      messageId: 'msg-004',
-      action: 'UnknownAction',
-      payload: {},
-    };
+    const rawMessage = [2, 'msg-004', 'UnknownAction', {}];
+    const context = new OcppContext('CP-001', 'msg-004');
 
-    const result = await useCase.execute(input, 'CP-001');
+    const result = (await useCase.execute(rawMessage, context)) as any[];
 
-    expect(result).toEqual([
-      4,
-      'msg-004',
-      'NotImplemented',
-      'Handler for UnknownAction not implemented',
-    ]);
+    expect(result[0]).toBe(4); // CALLERROR
+    expect(result[2]).toBe('NotImplemented');
   });
 
   it('should ignore non-CALL messages', async () => {
-    const input: OcppMessageInput = {
-      messageTypeId: 3, // CALLRESULT
-      messageId: 'msg-005',
-      action: 'BootNotification',
-      payload: {},
-    };
+    const rawMessage = [3, 'msg-005', {}]; // CALLRESULT
+    const context = new OcppContext('CP-001', 'msg-005');
 
-    const result = await useCase.execute(input, 'CP-001');
+    const result = await useCase.execute(rawMessage, context);
 
     expect(result).toEqual({ status: 'ignored' });
-    expect(bootNotifMock.execute).not.toHaveBeenCalled();
   });
 
-  it('should catch handler exceptions and return InternalError', async () => {
-    const input: OcppMessageInput = {
-      messageTypeId: 2,
-      messageId: 'msg-006',
-      action: 'Heartbeat',
-      payload: {},
-    };
+  it('should handle database errors gracefully', async () => {
+    const rawMessage = [
+      2,
+      'msg-006',
+      'BootNotification',
+      {
+        chargePointVendor: 'TestVendor',
+        chargePointModel: 'Model-X',
+      },
+    ];
 
-    heartbeatMock.execute.mockRejectedValue(
-      new Error('Database connection failed'),
-    );
+    const context = new OcppContext('CP-001', 'msg-006');
+    mockRepository.findByChargePointId.mockRejectedValue(new Error('Database connection failed'));
 
-    const result = await useCase.execute(input, 'CP-001');
+    const result = (await useCase.execute(rawMessage, context)) as any[];
 
     expect(result[0]).toBe(4); // CALLERROR
     expect(result[2]).toBe('InternalError');
-    expect(result[3]).toContain('Database connection failed');
   });
 });

@@ -11,9 +11,7 @@ describe('SelectChargePoint Use-Case', () => {
       findByChargePointId: jest.fn(),
     };
 
-    useCase = new SelectChargePoint(
-      repositoryMock as unknown as IChargePointRepository,
-    );
+    useCase = new SelectChargePoint(repositoryMock as unknown as IChargePointRepository);
   });
 
   it('should return a ChargePoint when found by chargePointId', async () => {
@@ -32,23 +30,17 @@ describe('SelectChargePoint Use-Case', () => {
 
     const result = await useCase.execute(chargePointId);
 
-    expect(repositoryMock.findByChargePointId).toHaveBeenCalledWith(
-      chargePointId,
-    );
+    expect(repositoryMock.findByChargePointId).toHaveBeenCalledWith(chargePointId);
     expect(result).toEqual(mockChargePoint);
   });
 
   it('should throw if chargePointId is empty', async () => {
-    await expect(useCase.execute('   ')).rejects.toThrow(
-      'chargePointId must not be empty',
-    );
+    await expect(useCase.execute('   ')).rejects.toThrow('chargePointId must not be empty');
   });
 
   it('should throw if ChargePoint not found', async () => {
     repositoryMock.findByChargePointId.mockResolvedValue(null);
 
-    await expect(useCase.execute('CP-NONEXISTENT')).rejects.toThrow(
-      'not found',
-    );
+    await expect(useCase.execute('CP-NONEXISTENT')).rejects.toThrow('not found');
   });
 });

@@ -36,9 +36,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('BootNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Missing required field: chargePointVendor',
-      );
+      expect(result.errors).toContain('Missing required field: chargePointVendor');
     });
 
     it('should reject string exceeding max length', () => {
@@ -48,9 +46,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('BootNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContainEqual(
-        expect.stringContaining('exceeds max length'),
-      );
+      expect(result.errors).toContainEqual(expect.stringContaining('exceeds max length'));
     });
   });
 
@@ -75,9 +71,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('StatusNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContainEqual(
-        expect.stringContaining('must be one of'),
-      );
+      expect(result.errors).toContainEqual(expect.stringContaining('must be one of'));
     });
 
     it('should reject invalid timestamp format', () => {
@@ -89,9 +83,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
       };
       const result = OcppSchema.validate('StatusNotification', payload);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContainEqual(
-        expect.stringContaining('ISO 8601'),
-      );
+      expect(result.errors).toContainEqual(expect.stringContaining('ISO 8601'));
     });
   });
 
@@ -99,9 +91,7 @@ describe('OcppSchema - OCPP 1.6 JSON Schema Validator', () => {
     it('should handle unknown action gracefully', () => {
       const result = OcppSchema.validate('UnknownAction', {});
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'No schema defined for action: UnknownAction',
-      );
+      expect(result.errors).toContain('No schema defined for action: UnknownAction');
     });
   });
 });

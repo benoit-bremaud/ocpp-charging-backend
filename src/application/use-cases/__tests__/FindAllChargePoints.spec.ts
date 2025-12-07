@@ -11,9 +11,7 @@ describe('FindAllChargePoints Use-Case', () => {
       findAll: jest.fn(),
     };
 
-    useCase = new FindAllChargePoints(
-      repositoryMock as unknown as IChargePointRepository,
-    );
+    useCase = new FindAllChargePoints(repositoryMock as unknown as IChargePointRepository);
   });
 
   it('should return all ChargePoints from repository', async () => {
@@ -38,9 +36,7 @@ describe('FindAllChargePoints Use-Case', () => {
       },
     ];
 
-    repositoryMock.findAll.mockResolvedValue(
-      mockChargePoints as ChargePoint[],
-    );
+    repositoryMock.findAll.mockResolvedValue(mockChargePoints as ChargePoint[]);
 
     const result = await useCase.execute();
 
