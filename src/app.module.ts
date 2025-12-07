@@ -27,6 +27,7 @@ import { ProcessOcppMessage } from './application/use-cases/ProcessOcppMessage';
 import { HandleBootNotification } from './application/use-cases/HandleBootNotification';
 import { HandleHeartbeat } from './application/use-cases/HandleHeartbeat';
 import { HandleStatusNotification } from './application/use-cases/HandleStatusNotification';
+import { HandleAuthorize } from './application/use-cases/HandleAuthorize';
 
 // Presentation
 import { ChargePointController } from './presentation/controllers/ChargePointController';
@@ -60,6 +61,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     HandleBootNotification,
     HandleHeartbeat,
     HandleStatusNotification,
+    HandleAuthorize,
     // Use-cases (OCPP Dispatcher - depends on handlers)
     ProcessOcppMessage,
     // WebSocket
@@ -77,6 +79,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     HandleBootNotification,
     HandleHeartbeat,
     HandleStatusNotification,
+    HandleAuthorize,
     ChargePointWebSocketService,
   ],
 })

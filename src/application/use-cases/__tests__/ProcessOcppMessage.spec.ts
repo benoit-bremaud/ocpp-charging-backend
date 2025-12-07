@@ -3,22 +3,23 @@ import { ProcessOcppMessage } from '../ProcessOcppMessage';
 import { HandleBootNotification } from '../HandleBootNotification';
 import { HandleHeartbeat } from '../HandleHeartbeat';
 import { HandleStatusNotification } from '../HandleStatusNotification';
-import { OcppContext } from '../../../domain/value-objects/OcppContext';
-import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../../infrastructure/tokens';
+import { HandleAuthorize } from '../HandleAuthorize';
 
 describe('ProcessOcppMessage', () => {
-  let useCase: ProcessOcppMessage;
-  let mockRepository: jest.Mocked<IChargePointRepository>;
+  let service: ProcessOcppMessage;
 
   beforeEach(async () => {
-    mockRepository = {
-      find: jest.fn(),
-      findByChargePointId: jest.fn(),
-      findAll: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+    const mockHandlerBootNotification = {
+      execute: jest.fn(),
+    };
+    const mockHandlerHeartbeat = {
+      execute: jest.fn(),
+    };
+    const mockHandlerStatusNotification = {
+      execute: jest.fn(),
+    };
+    const mockHandlerAuthorize = {
+      execute: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -27,101 +28,193 @@ describe('ProcessOcppMessage', () => {
         HandleBootNotification,
         HandleHeartbeat,
         HandleStatusNotification,
+        HandleAuthorize,
         {
-          provide: CHARGE_POINT_REPOSITORY_TOKEN,
-          useValue: mockRepository,
+          provide: HandleBootNotification,
+          useValue: mockHandlerBootNotification,
+        },
+        {
+          provide: HandleHeartbeat,
+          useValue: mockHandlerHeartbeat,
+        },
+        {
+          provide: HandleStatusNotification,
+          useValue: mockHandlerStatusNotification,
+        },
+        {
+          provide: HandleAuthorize,
+          useValue: mockHandlerAuthorize,
         },
       ],
     }).compile();
 
-    useCase = module.get<ProcessOcppMessage>(ProcessOcppMessage);
+    service = module.get<ProcessOcppMessage>(ProcessOcppMessage);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   it('should route BootNotification to handler', async () => {
-    const rawMessage = [
-      2,
-      'msg-001',
-      'BootNotification',
-      {
-        chargePointVendor: 'TestVendor',
-        chargePointModel: 'Model-X',
-      },
-    ];
+    const message = [2, '123', 'BootNotification', { chargePointModel: 'Test' }];
+    const context = { chargePointId: 'CP001', messageId: '123' };
+    const response = [3, '123', { status: 'Accepted' }];
 
-    const context = new OcppContext('CP-001', 'msg-001');
-    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+    const module = await Test.createTestingModule({
+      providers: [
+        ProcessOcppMessage,
+        HandleBootNotification,
+        HandleHeartbeat,
+        HandleStatusNotification,
+        HandleAuthorize,
+        {
+          provide: HandleBootNotification,
+          useValue: { execute: jest.fn().mockResolvedValue(response) },
+        },
+        {
+          provide: HandleHeartbeat,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleStatusNotification,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleAuthorize,
+          useValue: { execute: jest.fn() },
+        },
+      ],
+    }).compile();
 
-    const result = (await useCase.execute(rawMessage, context)) as any[];
-
-    expect(result[0]).toBe(3); // CALLRESULT
+    const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
+    const result = await processService.execute(message, context as any);
+    expect(result).toEqual(response);
   });
 
   it('should route Heartbeat to handler', async () => {
-    const rawMessage = [2, 'msg-002', 'Heartbeat', {}];
-    const context = new OcppContext('CP-001', 'msg-002');
+    const message = [2, '456', 'Heartbeat', {}];
+    const context = { chargePointId: 'CP001', messageId: '456' };
+    const response = [3, '456', { currentTime: '2025-12-07T01:00:00Z' }];
 
-    const result = (await useCase.execute(rawMessage, context)) as any[];
+    const module = await Test.createTestingModule({
+      providers: [
+        ProcessOcppMessage,
+        HandleBootNotification,
+        HandleHeartbeat,
+        HandleStatusNotification,
+        HandleAuthorize,
+        {
+          provide: HandleBootNotification,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleHeartbeat,
+          useValue: { execute: jest.fn().mockResolvedValue(response) },
+        },
+        {
+          provide: HandleStatusNotification,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleAuthorize,
+          useValue: { execute: jest.fn() },
+        },
+      ],
+    }).compile();
 
-    expect(result[0]).toBe(3); // CALLRESULT
+    const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
+    const result = await processService.execute(message, context as any);
+    expect(result).toEqual(response);
   });
 
   it('should route StatusNotification to handler', async () => {
-    const rawMessage = [
-      2,
-      'msg-003',
-      'StatusNotification',
-      {
-        connectorId: 1,
-        errorCode: 'NoError',
-        status: 'Available',
-        timestamp: new Date().toISOString(),
-      },
-    ];
+    const message = [2, '789', 'StatusNotification', { connectorId: 1, status: 'Available' }];
+    const context = { chargePointId: 'CP001', messageId: '789' };
+    const response = [3, '789', {}];
 
-    const context = new OcppContext('CP-001', 'msg-003');
-    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+    const module = await Test.createTestingModule({
+      providers: [
+        ProcessOcppMessage,
+        HandleBootNotification,
+        HandleHeartbeat,
+        HandleStatusNotification,
+        HandleAuthorize,
+        {
+          provide: HandleBootNotification,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleHeartbeat,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleStatusNotification,
+          useValue: { execute: jest.fn().mockResolvedValue(response) },
+        },
+        {
+          provide: HandleAuthorize,
+          useValue: { execute: jest.fn() },
+        },
+      ],
+    }).compile();
 
-    const result = (await useCase.execute(rawMessage, context)) as any[];
-
-    expect(result[0]).toBe(3); // CALLRESULT
+    const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
+    const result = await processService.execute(message, context as any);
+    expect(result).toEqual(response);
   });
 
   it('should return NotImplemented for unknown action', async () => {
-    const rawMessage = [2, 'msg-004', 'UnknownAction', {}];
-    const context = new OcppContext('CP-001', 'msg-004');
+    const message = [2, 'unknown', 'UnknownAction', {}];
+    const context = { chargePointId: 'CP001', messageId: 'unknown' };
 
-    const result = (await useCase.execute(rawMessage, context)) as any[];
-
-    expect(result[0]).toBe(4); // CALLERROR
+    const result = await service.execute(message, context as any);
+    expect(result[0]).toBe(4);
     expect(result[2]).toBe('NotImplemented');
   });
 
   it('should ignore non-CALL messages', async () => {
-    const rawMessage = [3, 'msg-005', {}]; // CALLRESULT
-    const context = new OcppContext('CP-001', 'msg-005');
+    const callResultMessage = [3, '123', {}];
+    const context = { chargePointId: 'CP001', messageId: '123' };
 
-    const result = await useCase.execute(rawMessage, context);
-
-    expect(result).toEqual({ status: 'ignored' });
+    const result = await service.execute(callResultMessage, context as any);
+    expect(result.status).toBe('ignored');
   });
 
   it('should handle database errors gracefully', async () => {
-    const rawMessage = [
-      2,
-      'msg-006',
-      'BootNotification',
-      {
-        chargePointVendor: 'TestVendor',
-        chargePointModel: 'Model-X',
-      },
-    ];
+    const message = [2, 'error', 'Heartbeat', {}];
+    const context = { chargePointId: 'CP001', messageId: 'error' };
 
-    const context = new OcppContext('CP-001', 'msg-006');
-    mockRepository.findByChargePointId.mockRejectedValue(new Error('Database connection failed'));
+    const module = await Test.createTestingModule({
+      providers: [
+        ProcessOcppMessage,
+        HandleBootNotification,
+        HandleHeartbeat,
+        HandleStatusNotification,
+        HandleAuthorize,
+        {
+          provide: HandleBootNotification,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleHeartbeat,
+          useValue: { 
+            execute: jest.fn().mockRejectedValue(new Error('Database connection failed'))
+          },
+        },
+        {
+          provide: HandleStatusNotification,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: HandleAuthorize,
+          useValue: { execute: jest.fn() },
+        },
+      ],
+    }).compile();
 
-    const result = (await useCase.execute(rawMessage, context)) as any[];
-
-    expect(result[0]).toBe(4); // CALLERROR
+    const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
+    const result = await processService.execute(message, context as any);
+    expect(result[0]).toBe(4);
     expect(result[2]).toBe('InternalError');
   });
 });
