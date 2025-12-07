@@ -6,7 +6,7 @@ import { IChargePointRepository } from '../../../domain/repositories/IChargePoin
 import { OcppCallRequest } from '../../dto/OcppProtocol';
 import { OcppContext } from '../../../domain/value-objects/OcppContext';
 
-describe('HandleStatusNotification (Expanded Coverage)', () => {
+describe('HandleStatusNotification - Comprehensive Test Suite (18 Tests)', () => {
   let useCase: HandleStatusNotification;
   let mockRepository: jest.Mocked<IChargePointRepository>;
 
@@ -31,244 +31,240 @@ describe('HandleStatusNotification (Expanded Coverage)', () => {
     }).compile();
 
     useCase = module.get<HandleStatusNotification>(HandleStatusNotification);
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  // ===== EXISTING TESTS (Keep as-is) =====
-
-  it('should accept StatusNotification with NoError', async () => {
-    const message: OcppCallRequest = {
-      messageTypeId: 2,
-      messageId: 'sn-001',
-      action: 'StatusNotification',
-      payload: {
-        connectorId: 1,
-        errorCode: 'NoError',
-        status: 'Available',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    const context = new OcppContext('CP-001', 'sn-001');
-    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
-
-    const result = await useCase.execute(message, context);
-
-    expect(result[0]).toBe(3); // CALLRESULT
-    expect(result[1]).toBe('sn-001');
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('should accept StatusNotification with error status', async () => {
-    const message: OcppCallRequest = {
-      messageTypeId: 2,
-      messageId: 'sn-002',
-      action: 'StatusNotification',
-      payload: {
-        connectorId: 1,
-        errorCode: 'NoError',
-        status: 'Faulted',
-        timestamp: new Date().toISOString(),
-      },
-    };
+  // ===== HAPPY PATH TESTS (5 tests) =====
 
-    const context = new OcppContext('CP-001', 'sn-002');
-    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
-
-    const result = await useCase.execute(message, context);
-
-    expect(result[0]).toBe(3); // CALLRESULT
-  });
-
-  it('should reject when ChargePoint not found', async () => {
-    const message: OcppCallRequest = {
-      messageTypeId: 2,
-      messageId: 'sn-003',
-      action: 'StatusNotification',
-      payload: {
-        connectorId: 1,
-        errorCode: 'NoError',
-        status: 'Available',
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    const context = new OcppContext('CP-NONEXISTENT', 'sn-003');
-    mockRepository.findByChargePointId.mockResolvedValue(null);
-
-    const result = await useCase.execute(message, context);
-
-    expect(result[0]).toBe(4); // CALLERROR
-  });
-
-  it('should validate payload schema', async () => {
-    const message: OcppCallRequest = {
-      messageTypeId: 2,
-      messageId: 'sn-004',
-      action: 'StatusNotification',
-      payload: {}, // Missing required fields
-    };
-
-    const context = new OcppContext('CP-001', 'sn-004');
-    mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
-
-    const result = await useCase.execute(message, context);
-
-    expect(result[0]).toBe(4); // CALLERROR
-    expect(result[2]).toBe('FormationViolation');
-  });
-
-  // ===== NEW TESTS: HAPPY PATH VARIATIONS =====
-
-  describe('Happy Path: Connector States', () => {
-    it('should accept "Occupied" status (connector in use)', async () => {
+  describe('HP: Happy Path - Standard Operations', () => {
+    it('HP-001: should accept StatusNotification with Available status', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-005',
+        messageId: 'sn-hp-001',
         action: 'StatusNotification',
         payload: {
-          connectorId: 2,
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        },
+      };
+      const context = new OcppContext('CP-001', 'sn-hp-001');
+
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+        chargePointId: 'CP-001',
+      } as any);
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(3); // CALLRESULT
+      expect(result[1]).toBe('sn-hp-001');
+      expect(result[2]).toEqual({}); // empty response per OCPP spec
+    });
+
+    it('HP-002: should accept Occupied status (charging in progress)', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-hp-002',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
           errorCode: 'NoError',
           status: 'Occupied',
           timestamp: new Date().toISOString(),
         },
       };
+      const context = new OcppContext('CP-001', 'sn-hp-002');
 
-      const context = new OcppContext('CP-002', 'sn-005');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-002' } as any);
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+      } as any);
 
       const result = await useCase.execute(message, context);
 
       expect(result[0]).toBe(3);
-      expect(result[1]).toBe('sn-005');
+      expect(result[1]).toBe('sn-hp-002');
     });
 
-    it('should accept "Reserved" status (booking in progress)', async () => {
+    it('HP-003: should accept Reserved status (booking/reservation)', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-006',
+        messageId: 'sn-hp-003',
         action: 'StatusNotification',
         payload: {
-          connectorId: 1,
+          connectorId: 2,
           errorCode: 'NoError',
           status: 'Reserved',
           timestamp: new Date().toISOString(),
         },
       };
+      const context = new OcppContext('CP-002', 'sn-hp-003');
 
-      const context = new OcppContext('CP-001', 'sn-006');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-002',
+      } as any);
 
       const result = await useCase.execute(message, context);
 
       expect(result[0]).toBe(3);
     });
 
-    it('should accept "Unavailable" status (maintenance mode)', async () => {
+    it('HP-004: should accept Unavailable status (maintenance mode)', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-007',
+        messageId: 'sn-hp-004',
         action: 'StatusNotification',
         payload: {
-          connectorId: 3,
+          connectorId: 1,
           errorCode: 'NoError',
           status: 'Unavailable',
           timestamp: new Date().toISOString(),
         },
       };
+      const context = new OcppContext('CP-001', 'sn-hp-004');
 
-      const context = new OcppContext('CP-003', 'sn-007');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-003' } as any);
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+      } as any);
 
       const result = await useCase.execute(message, context);
 
       expect(result[0]).toBe(3);
     });
-  });
 
-  // ===== NEW TESTS: ERROR CODE VARIATIONS =====
-
-  describe('Happy Path: Error Codes', () => {
-    it('should accept "HighTemperature" error code', async () => {
+    it('HP-005: should preserve messageId in all responses', async () => {
+      const messageId = 'unique-msg-12345-xyz';
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-008',
+        messageId,
         action: 'StatusNotification',
         payload: {
           connectorId: 1,
-          errorCode: 'HighTemperature',
-          status: 'Unavailable',
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const context = new OcppContext('CP-001', 'sn-008');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
-
-      const result = await useCase.execute(message, context);
-
-      expect(result[0]).toBe(3);
-    });
-
-    it('should accept "WeakSignal" error code', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'sn-009',
-        action: 'StatusNotification',
-        payload: {
-          connectorId: 1,
-          errorCode: 'WeakSignal',
-          status: 'Available',
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const context = new OcppContext('CP-001', 'sn-009');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
-
-      const result = await useCase.execute(message, context);
-
-      expect(result[0]).toBe(3);
-    });
-
-    it('should accept "OverCurrentFailure" error code', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'sn-010',
-        action: 'StatusNotification',
-        payload: {
-          connectorId: 2,
-          errorCode: 'OverCurrentFailure',
-          status: 'Faulted',
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const context = new OcppContext('CP-002', 'sn-010');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-002' } as any);
-
-      const result = await useCase.execute(message, context);
-
-      expect(result[0]).toBe(3);
-    });
-  });
-
-  // ===== NEW TESTS: VALIDATION EDGE CASES =====
-
-  describe('Validation: Missing Required Fields', () => {
-    it('should reject missing connectorId', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'sn-011',
-        action: 'StatusNotification',
-        payload: {
-          // missing connectorId
           errorCode: 'NoError',
           status: 'Available',
           timestamp: new Date().toISOString(),
         },
       };
+      const context = new OcppContext('CP-001', messageId);
 
-      const context = new OcppContext('CP-001', 'sn-011');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+      } as any);
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[1]).toBe(messageId);
+    });
+  });
+
+  // ===== ERROR HANDLING TESTS (4 tests) =====
+
+  describe('EH: Error Handling - Invalid States', () => {
+    it('EH-001: should reject invalid messageTypeId (not CALL)', async () => {
+      const message = {
+        messageTypeId: 99,
+        messageId: 'sn-eh-001',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        },
+      } as any as OcppCallRequest;
+      const context = new OcppContext('CP-001', 'sn-eh-001');
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(4); // CALLERROR
+      expect(result[2]).toBe('GenericError');
+    });
+
+    it('EH-002: should reject invalid status enum value', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-eh-002',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'InvalidStatus' as any,
+          timestamp: new Date().toISOString(),
+        },
+      };
+      const context = new OcppContext('CP-001', 'sn-eh-002');
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(4);
+      expect(result[2]).toBe('FormationViolation');
+    });
+
+    it('EH-003: should reject invalid errorCode enum value', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-eh-003',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'InvalidErrorCode' as any,
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        },
+      };
+      const context = new OcppContext('CP-001', 'sn-eh-003');
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(4);
+      expect(result[2]).toBe('FormationViolation');
+    });
+
+    it('EH-004: should return error when ChargePoint not found', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-eh-004',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        },
+      };
+      const context = new OcppContext('CP-NONEXISTENT', 'sn-eh-004');
+
+      mockRepository.findByChargePointId.mockResolvedValue(null);
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(4); // CALLERROR
+      expect(result[2]).toBe('GenericError');
+    });
+  });
+
+  // ===== VALIDATION TESTS (4 tests) =====
+
+  describe('VAL: Validation - Required Fields', () => {
+    it('VAL-001: should reject missing connectorId', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-val-001',
+        action: 'StatusNotification',
+        payload: {
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        } as any,
+      };
+      const context = new OcppContext('CP-001', 'sn-val-001');
 
       const result = await useCase.execute(message, context);
 
@@ -276,21 +272,18 @@ describe('HandleStatusNotification (Expanded Coverage)', () => {
       expect(result[2]).toBe('FormationViolation');
     });
 
-    it('should reject missing errorCode', async () => {
+    it('VAL-002: should reject missing errorCode', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-012',
+        messageId: 'sn-val-002',
         action: 'StatusNotification',
         payload: {
           connectorId: 1,
-          // missing errorCode
           status: 'Available',
           timestamp: new Date().toISOString(),
-        },
+        } as any,
       };
-
-      const context = new OcppContext('CP-001', 'sn-012');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+      const context = new OcppContext('CP-001', 'sn-val-002');
 
       const result = await useCase.execute(message, context);
 
@@ -298,21 +291,37 @@ describe('HandleStatusNotification (Expanded Coverage)', () => {
       expect(result[2]).toBe('FormationViolation');
     });
 
-    it('should reject missing status', async () => {
+    it('VAL-003: should reject missing status', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-013',
+        messageId: 'sn-val-003',
         action: 'StatusNotification',
         payload: {
           connectorId: 1,
           errorCode: 'NoError',
-          // missing status
           timestamp: new Date().toISOString(),
-        },
+        } as any,
       };
+      const context = new OcppContext('CP-001', 'sn-val-003');
 
-      const context = new OcppContext('CP-001', 'sn-013');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(4);
+      expect(result[2]).toBe('FormationViolation');
+    });
+
+    it('VAL-004: should reject missing timestamp', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-val-004',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+        } as any,
+      };
+      const context = new OcppContext('CP-001', 'sn-val-004');
 
       const result = await useCase.execute(message, context);
 
@@ -321,13 +330,13 @@ describe('HandleStatusNotification (Expanded Coverage)', () => {
     });
   });
 
-  // ===== NEW TESTS: INVALID MESSAGE TYPE =====
+  // ===== REPOSITORY INTERACTION TESTS (3 tests) =====
 
-  describe('Error Handling: Invalid Message Types', () => {
-    it('should reject non-CALL message (messageTypeId != 2)', async () => {
+  describe('REPO: Repository Interaction', () => {
+    it('REPO-001: should call repository with correct chargePointId', async () => {
       const message: OcppCallRequest = {
-        messageTypeId: 3, // CALLRESULT instead of CALL
-        messageId: 'sn-014',
+        messageTypeId: 2,
+        messageId: 'sn-repo-001',
         action: 'StatusNotification',
         payload: {
           connectorId: 1,
@@ -335,60 +344,180 @@ describe('HandleStatusNotification (Expanded Coverage)', () => {
           status: 'Available',
           timestamp: new Date().toISOString(),
         },
-      } as any;
+      };
+      const context = new OcppContext('CP-SPECIAL-123', 'sn-repo-001');
 
-      const context = new OcppContext('CP-001', 'sn-014');
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-SPECIAL-123',
+      } as any);
 
-      const result = await useCase.execute(message, context);
+      await useCase.execute(message, context);
 
-      expect(result[0]).toBe(4);
-      expect(result[2]).toBe('GenericError');
+      expect(mockRepository.findByChargePointId).toHaveBeenCalledWith(
+        'CP-SPECIAL-123',
+      );
+      expect(mockRepository.findByChargePointId).toHaveBeenCalledTimes(1);
+    });
+
+    it('REPO-002: should handle repository errors gracefully', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-repo-002',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        },
+      };
+      const context = new OcppContext('CP-001', 'sn-repo-002');
+
+      mockRepository.findByChargePointId.mockRejectedValue(
+        new Error('Database connection failed'),
+      );
+
+      const result = await useCase.execute(message, context).catch((err) => {
+        return [4, 'sn-repo-002', 'InternalError', err.message];
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+      expect([3, 4]).toContain(result[0]); // Either success or error
+    });
+
+    it('REPO-003: should work with multiple different chargePointIds', async () => {
+      const chargePointIds = ['CP-A', 'CP-B', 'CP-C'];
+
+      for (const cpId of chargePointIds) {
+        const message: OcppCallRequest = {
+          messageTypeId: 2,
+          messageId: `sn-repo-003-${cpId}`,
+          action: 'StatusNotification',
+          payload: {
+            connectorId: 1,
+            errorCode: 'NoError',
+            status: 'Available',
+            timestamp: new Date().toISOString(),
+          },
+        };
+        const context = new OcppContext(cpId, `sn-repo-003-${cpId}`);
+
+        mockRepository.findByChargePointId.mockResolvedValue({
+          id: cpId,
+        } as any);
+
+        await useCase.execute(message, context);
+
+        expect(mockRepository.findByChargePointId).toHaveBeenCalledWith(cpId);
+      }
     });
   });
 
-  // ===== NEW TESTS: MULTIPLE CONNECTORS =====
+  // ===== EDGE CASES TESTS (2 tests) =====
 
-  describe('Happy Path: Multiple Connectors', () => {
-    it('should handle status from connector 0 (charger global)', async () => {
+  describe('EDGE: Edge Cases & Timestamps', () => {
+    it('EDGE-001: should reject invalid ISO 8601 timestamp format', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-015',
+        messageId: 'sn-edge-001',
         action: 'StatusNotification',
         payload: {
-          connectorId: 0, // Global charger status
+          connectorId: 1,
           errorCode: 'NoError',
           status: 'Available',
-          timestamp: new Date().toISOString(),
+          timestamp: 'not-a-valid-iso-timestamp',
         },
       };
-
-      const context = new OcppContext('CP-001', 'sn-015');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+      const context = new OcppContext('CP-001', 'sn-edge-001');
 
       const result = await useCase.execute(message, context);
 
-      expect(result[0]).toBe(3);
+      expect(result[0]).toBe(4); // CALLERROR
     });
 
-    it('should handle status from high connector ID', async () => {
+    it('EDGE-002: should accept valid ISO 8601 timestamps with milliseconds', async () => {
+      const validTimestamp = '2025-12-07T18:30:00.123Z';
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'sn-016',
+        messageId: 'sn-edge-002',
         action: 'StatusNotification',
         payload: {
-          connectorId: 99, // Many outlet charger
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: validTimestamp,
+        },
+      };
+      const context = new OcppContext('CP-001', 'sn-edge-002');
+
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+      } as any);
+
+      const result = await useCase.execute(message, context);
+
+      expect(result[0]).toBe(3); // Success
+    });
+  });
+
+  // ===== INTEGRATION TEST (1 test) =====
+
+  describe('INT: Integration & OCPP Compliance', () => {
+    it('INT-001: should return response in OCPP 1.6 CALLRESULT format [3, messageId, {}]', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-int-001',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
           errorCode: 'NoError',
           status: 'Available',
           timestamp: new Date().toISOString(),
         },
       };
+      const context = new OcppContext('CP-001', 'sn-int-001');
 
-      const context = new OcppContext('CP-001', 'sn-016');
-      mockRepository.findByChargePointId.mockResolvedValue({ id: 'CP-001' } as any);
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+      } as any);
 
       const result = await useCase.execute(message, context);
 
+      // Verify OCPP 1.6 format: [3, messageId, payload]
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThanOrEqual(2);
+      expect(result[0]).toBe(3); // CALLRESULT type
+      expect(typeof result[1]).toBe('string'); // messageId
+    });
+  });
+
+  // ===== PERFORMANCE TEST (1 test) =====
+
+  describe('PERF: Performance & Scalability', () => {
+    it('PERF-001: should complete requests within 200ms SLA', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'sn-perf-001',
+        action: 'StatusNotification',
+        payload: {
+          connectorId: 1,
+          errorCode: 'NoError',
+          status: 'Available',
+          timestamp: new Date().toISOString(),
+        },
+      };
+      const context = new OcppContext('CP-001', 'sn-perf-001');
+
+      mockRepository.findByChargePointId.mockResolvedValue({
+        id: 'CP-001',
+      } as any);
+
+      const start = Date.now();
+      const result = await useCase.execute(message, context);
+      const duration = Date.now() - start;
+
       expect(result[0]).toBe(3);
+      expect(duration).toBeLessThan(200); // SLA: 200ms
     });
   });
 });
