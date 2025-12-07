@@ -1,35 +1,57 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OcppContext } from '../../domain/value-objects/OcppContext';
+import { buildFormationViolation, buildHeartbeatResponse } from '../dto/OcppResponseBuilders';
+
 import { OcppCallRequest } from '../dto/OcppProtocol';
-import { buildHeartbeatResponse, buildGenericError } from '../dto/OcppResponseBuilders';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
 
 /**
- * Use-Case: Handle Heartbeat (OCPP 1.6 Compliant)
+ * Use-Case: Handle Heartbeat (OCPP 1.6 Spec)
  *
- * Input:  [2, messageId, "Heartbeat", {}]
- * Output: [3, messageId, {currentTime}]
- * Error:  [4, messageId, errorCode, description]
+ * ChargePoint requests: "Are you still there?"
+ * Backend responds: "Yes, here's the current time"
  *
- * CLEAN: Pure business logic (stateless)
- * OCPP:  Simple heartbeat echo with server time
+ * Input: [2, messageId, "Heartbeat", {}]
+ * Output: [3, messageId, {currentTime: "ISO-8601"}]
+ * Error: [4, messageId, errorCode, description]
  */
 @Injectable()
 export class HandleHeartbeat {
-  private logger = new Logger('HandleHeartbeat');
+  private readonly logger = new Logger('HandleHeartbeat');
 
   /**
-   * Execute: Handle Heartbeat message
+   * Execute heartbeat request
+   * @param message OCPP CALL message
+   * @param context Message metadata
+   * @returns OCPP CALLRESULT or CALLERROR array
    */
   async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
-    // Validate message is CALL
+    // OCPP 1.6: Must be CALL type (messageTypeId = 2)
     if (message.messageTypeId !== 2) {
-      this.logger.error('Heartbeat expects CALL (messageTypeId 2)');
-      return buildGenericError(context.messageId, 'Expected CALL message type');
+      this.logger.error(
+        `[${context.chargePointId}] Heartbeat expects CALL (messageTypeId 2), got ${message.messageTypeId}`,
+      );
+      return buildFormationViolation(context.messageId, 'Heartbeat expects CALL message type');
     }
 
-    this.logger.log(`💓 Heartbeat from ${context.chargePointId}`);
+    // OCPP 1.6: Heartbeat payload MUST be empty object {}
+    if (typeof message.payload !== 'object' || message.payload === null) {
+      this.logger.warn(`[${context.chargePointId}] Heartbeat: payload must be object`);
+      return buildFormationViolation(context.messageId, 'Heartbeat payload must be empty object');
+    }
 
-    // Return current server time per OCPP 1.6 spec
+    const payloadKeys = Object.keys(message.payload);
+    if (payloadKeys.length > 0) {
+      this.logger.warn(
+        `[${context.chargePointId}] Heartbeat: payload must be empty, got keys: ${payloadKeys.join(', ')}`,
+      );
+      return buildFormationViolation(context.messageId, 'Heartbeat payload must be empty object');
+    }
+
+    this.logger.log(
+      `💓 Heartbeat received from chargePointId="${context.chargePointId}" at ${context.timestamp.toISOString()}`,
+    );
+
+    // OCPP 1.6: Return CALLRESULT with currentTime
     return buildHeartbeatResponse(context.messageId);
   }
 }
