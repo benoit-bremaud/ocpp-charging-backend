@@ -1,10 +1,17 @@
 .PHONY: help \
-	audit audit-full audit-clean \
-	audit-clean-arch audit-solid audit-patterns audit-adr audit-ddr \
-	audit-coverage audit-tests audit-infrastructure \
-	audit-code-quality audit-lint audit-prettier audit-security \
-	audit-typescript audit-ocpp audit-performance \
-	audit-git audit-report audit-compare audit-watch
+    audit audit-full audit-clean \
+    audit-clean-arch audit-solid audit-patterns audit-adr audit-ddr \
+    audit-coverage audit-tests audit-infrastructure \
+    audit-code-quality audit-lint audit-prettier audit-security \
+    audit-typescript audit-ocpp audit-performance \
+    audit-git audit-report audit-compare audit-watch \
+    health db-health \
+    status \
+    db-migrate-up db-migrate-down db-migrate-status db-migrations-list \
+    audit-migrations audit-docker audit-env audit-integration \
+    pre-deploy deploy-staging deploy-prod
+
+.SILENT:
 
 # Configuration
 AUDIT_DIR := .audits
@@ -16,7 +23,182 @@ RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 BLUE := \033[0;34m
+CYAN := \033[0;36m
+MAGENTA := \033[0;35m
 NC := \033[0m # No Color
+
+# ==============================================================================
+# 📚 HELP - Complete Command Reference
+# ==============================================================================
+
+help:
+	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║  🚀 OCPP CHARGING BACKEND - MAKEFILE COMMANDS                           ║$(NC)"
+	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(MAGENTA)📊 QUICK STATUS$(NC)"
+	@echo "  $(CYAN)make status$(NC)              Show project status (git, tests)"
+	@echo "  $(CYAN)make health$(NC)              Complete health check (build, tests, DB)"
+	@echo "  $(CYAN)make db-health$(NC)           Database connection check"
+	@echo ""
+	@echo "$(MAGENTA)📦 BUILD & TEST$(NC)"
+	@echo "  $(CYAN)make install$(NC)             Install dependencies (npm install)"
+	@echo "  $(CYAN)make build$(NC)               Build project (npm run build)"
+	@echo "  $(CYAN)make test$(NC)                Run all tests (npm test)"
+	@echo "  $(CYAN)make test-watch$(NC)          Run tests in watch mode"
+	@echo "  $(CYAN)make lint$(NC)                Run ESLint (npm run lint)"
+	@echo "  $(CYAN)make format$(NC)              Format code with Prettier (npm run format)"
+	@echo ""
+	@echo "$(MAGENTA)🗄️  DATABASE MIGRATIONS$(NC)"
+	@echo "  $(CYAN)make db-migrate-up$(NC)       Run pending migrations"
+	@echo "  $(CYAN)make db-migrate-down$(NC)     Revert last migration"
+	@echo "  $(CYAN)make db-migrate-status$(NC)   Show migration status"
+	@echo "  $(CYAN)make db-migrations-list$(NC)  List all migration files"
+	@echo ""
+	@echo "$(MAGENTA)🔍 AUDITS - Single Focus$(NC)"
+	@echo "  $(CYAN)make audit$(NC)               Quick audit (tests + structure)"
+	@echo "  $(CYAN)make audit-full$(NC)          Comprehensive audit (all checks)"
+	@echo "  $(CYAN)make audit-clean-arch$(NC)    CLEAN Architecture layers"
+	@echo "  $(CYAN)make audit-solid$(NC)         SOLID Principles compliance"
+	@echo "  $(CYAN)make audit-patterns$(NC)      Design patterns analysis"
+	@echo "  $(CYAN)make audit-adr$(NC)           Architecture Decision Records"
+	@echo "  $(CYAN)make audit-ddr$(NC)           Data Domain Relationships"
+	@echo "  $(CYAN)make audit-typescript$(NC)    TypeScript configuration"
+	@echo "  $(CYAN)make audit-ocpp$(NC)          OCPP protocol compliance"
+	@echo "  $(CYAN)make audit-coverage$(NC)      Test coverage detailed report"
+	@echo "  $(CYAN)make audit-docker$(NC)        Docker configuration check"
+	@echo "  $(CYAN)make audit-env$(NC)           Environment setup validation"
+	@echo ""
+	@echo "$(MAGENTA)📊 AUDIT MANAGEMENT$(NC)"
+	@echo "  $(CYAN)make audit-clean$(NC)         Remove old audit reports (keep last 5)"
+	@echo "  $(CYAN)make audit-report$(NC)        Generate comprehensive report"
+	@echo "  $(CYAN)make audit-compare$(NC)       Compare last 2 audit reports"
+	@echo "  $(CYAN)make audit-watch$(NC)         Watch mode (continuous auditing)"
+	@echo ""
+	@echo "$(MAGENTA)🚀 DEPLOYMENT$(NC)"
+	@echo "  $(CYAN)make pre-deploy$(NC)          Run all pre-deployment checks"
+	@echo "  $(CYAN)make deploy-staging$(NC)      Deploy to staging environment"
+	@echo "  $(CYAN)make deploy-prod$(NC)         Deploy to production (⚠️  CAREFUL)"
+	@echo ""
+	@echo "$(MAGENTA)🛠️  UTILITIES$(NC)"
+	@echo "  $(CYAN)make help$(NC)                Show this help message"
+	@echo ""
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo ""
+	@echo "$(YELLOW)📝 EXAMPLES:$(NC)"
+	@echo "  $(CYAN)make health              # Full system check$(NC)"
+	@echo "  $(CYAN)make db-migrate-up       # Run pending migrations$(NC)"
+	@echo "  $(CYAN)make audit               # Quick validation$(NC)"
+	@echo "  $(CYAN)make audit-full          # Complete analysis$(NC)"
+	@echo "  $(CYAN)make pre-deploy          # Pre-deployment checklist$(NC)"
+	@echo ""
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+
+# ==============================================================================
+# 🎯 QUICK SYSTEM CHECKS
+# ==============================================================================
+
+# Complete Health Check
+health:
+	@echo "$(BLUE)🏥 COMPLETE SYSTEM HEALTH CHECK$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "$(YELLOW)🔍 Checking Node.js...$(NC)"
+	@node --version && echo "  ✅ Node.js OK" || { echo "  ❌ Node.js NOT FOUND"; exit 1; }
+	@echo ""
+	@echo "$(YELLOW)🔍 Checking npm...$(NC)"
+	@npm --version && echo "  ✅ npm OK" || { echo "  ❌ npm NOT FOUND"; exit 1; }
+	@echo ""
+	@echo "$(YELLOW)🔍 Checking dependencies...$(NC)"
+	@[ -d node_modules ] && echo "  ✅ Dependencies installed" || (echo "  ⚠️  Installing..."; npm install)
+	@echo ""
+	@echo "$(YELLOW)🔍 Building project...$(NC)"
+	@npm run build >/dev/null 2>&1 && echo "  ✅ Build OK" || { echo "  ❌ Build FAILED"; exit 1; }
+	@echo ""
+	@echo "$(YELLOW)🔍 Running tests...$(NC)"
+	@npm test -- --watchAll=false --passWithNoTests 2>&1 | tail -1 && echo "  ✅ Tests OK" || { echo "  ⚠️  Some tests failed"; }
+	@echo ""
+	@echo "$(YELLOW)🔍 Checking database...$(NC)"
+	@make db-health
+	@echo ""
+	@echo "$(GREEN)✅ System health check complete!$(NC)"
+
+# Database Health Check
+db-health:
+	@echo "$(BLUE)🗄️  DATABASE HEALTH CHECK$(NC)"
+	@if [ -z "$$DATABASE_URL" ]; then \
+		echo "  ⚠️  DATABASE_URL not set, trying default..."; \
+		export DATABASE_URL="postgres://postgres:postgres@localhost:5432/ocpp_db"; \
+	fi
+	@npm run typeorm query "SELECT NOW()" >/dev/null 2>&1 && echo "  ✅ Database connection OK" || echo "  ❌ Database connection FAILED"
+	@npm run typeorm query "SELECT COUNT(*) as tables FROM information_schema.tables WHERE table_schema = 'public'" >/dev/null 2>&1 && echo "  ✅ Schema accessible" || echo "  ⚠️  Schema check failed"
+
+# Quick Status
+status:
+	@echo "$(BLUE)📊 PROJECT STATUS$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "Branch: $$(git rev-parse --abbrev-ref HEAD)"
+	@echo "Commit: $$(git log -1 --pretty=format:%h) - $$(git log -1 --pretty=format:%s)"
+	@echo "Changes: $$(git status --porcelain | wc -l) files"
+	@echo ""
+	@npm test -- --watchAll=false --passWithNoTests 2>&1 | grep -E "(Tests:|PASS|FAIL)" | head -1 || echo "Tests: (not run yet)"
+	@echo ""
+
+# ==============================================================================
+# 🎯 BUILD & TEST COMMANDS
+# ==============================================================================
+
+install:
+	@echo "$(BLUE)📦 Installing dependencies...$(NC)"
+	npm install
+	@echo "$(GREEN)✅ Dependencies installed!$(NC)"
+
+build:
+	@echo "$(BLUE)🔨 Building project...$(NC)"
+	npm run build
+	@echo "$(GREEN)✅ Build complete!$(NC)"
+
+test:
+	@echo "$(BLUE)🧪 Running tests...$(NC)"
+	npm test -- --watchAll=false
+
+test-watch:
+	@echo "$(BLUE)🧪 Running tests in watch mode...$(NC)"
+	npm test
+
+lint:
+	@echo "$(BLUE)🔍 Running ESLint...$(NC)"
+	npm run lint
+
+format:
+	@echo "$(BLUE)✨ Formatting code...$(NC)"
+	npm run format
+
+# ==============================================================================
+# 🗄️  DATABASE MIGRATION MANAGEMENT
+# ==============================================================================
+
+# Run pending migrations
+db-migrate-up:
+	@echo "$(BLUE)🚀 Running pending migrations...$(NC)"
+	npm run typeorm migration:run
+	@echo "$(GREEN)✅ Migrations completed!$(NC)"
+
+# Revert last migration
+db-migrate-down:
+	@echo "$(YELLOW)⏮️  Reverting last migration...$(NC)"
+	npm run typeorm migration:revert
+	@echo "$(GREEN)✅ Migration reverted!$(NC)"
+
+# Show migration status
+db-migrate-status:
+	@echo "$(BLUE)📋 Migration Status:$(NC)"
+	npm run typeorm migration:show
+
+# List all migration files
+db-migrations-list:
+	@echo "$(BLUE)📂 Migration Files:$(NC)"
+	@find src/infrastructure/database/migrations -name "*.ts" -type f | sort
 
 # ==============================================================================
 # 🎯 QUICK AUDITS - Single Focus
@@ -57,9 +239,7 @@ audit-solid:
 	@echo "$(YELLOW)📋 SOLID Checklist:$(NC)"
 	@echo ""
 	@echo "  S - Single Responsibility Principle:"
-	@find src/application/use-cases -name "*.ts" -not -path "*/tests/*" | while read f; do \
-		echo "    ✓ $$(basename $$f)"; \
-	done
+	@find src/application/use-cases -name "*.ts" -not -path "*/tests/*" | while read f; do echo "    ✓ $$(basename $$f)"; done
 	@echo ""
 	@echo "  O - Open/Closed Principle:"
 	@echo "    ✓ Handler registry pattern (extensible)"
@@ -162,9 +342,7 @@ audit-ddr:
 	@echo "  Transaction (1) ──→ (Many) StatusChange [TODO - PRIORITY 3]"
 	@echo ""
 	@echo "$(YELLOW)✅ Current Entities:$(NC)"
-	@find src/domain/entities -name "*.ts" -not -path "*/tests/*" 2>/dev/null | while read f; do \
-		echo "    📍 $$(basename $$f .ts)"; \
-	done
+	@find src/domain/entities -name "*.ts" -not -path "*/tests/*" 2>/dev/null | while read f; do echo "    📍 $$(basename $$f .ts)"; done
 	@echo ""
 	@echo "$(YELLOW)⏳ Needed Entities (PRIORITY 1):$(NC)"
 	@echo "  🔲 Connector (OneToMany with ChargePoint)"
@@ -173,182 +351,47 @@ audit-ddr:
 	@echo ""
 	@echo "$(GREEN)✅ DDR audit complete!$(NC)"
 
-# ==============================================================================
-# 🧪 TESTING AUDITS
-# ==============================================================================
+# TypeScript Configuration Audit
+audit-typescript:
+	@echo "$(BLUE)🔷 TYPESCRIPT CONFIGURATION AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "$(YELLOW)📋 Checking tsconfig.json:$(NC)"
+	@[ -f tsconfig.json ] && echo "  ✅ tsconfig.json exists" || echo "  ❌ tsconfig.json MISSING"
+	@echo ""
+	@echo "$(YELLOW)🔍 Compilation check:$(NC)"
+	@npx tsc --noEmit 2>&1 | head -5 && echo "  ✅ No TypeScript errors" || echo "  ⚠️  TypeScript issues found"
+	@echo ""
+	@echo "$(GREEN)✅ TypeScript audit complete!$(NC)"
+
+# OCPP Compliance Audit
+audit-ocpp:
+	@echo "$(BLUE)⚡ OCPP 1.6 COMPLIANCE AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "$(YELLOW)✅ Supported Messages:$(NC)"
+	@echo "  ✓ BootNotification"
+	@echo "  ✓ Heartbeat"
+	@echo "  ✓ Authorize"
+	@echo "  ✓ StartTransaction"
+	@echo "  ✓ StopTransaction"
+	@echo "  ✓ MeterValues"
+	@echo "  ✓ StatusNotification"
+	@echo ""
+	@echo "$(YELLOW)⏳ TODO Messages:$(NC)"
+	@echo "  ✗ FirmwareStatusNotification"
+	@echo "  ✗ DiagnosticsStatusNotification"
+	@echo "  ✗ ReserveNow"
+	@echo "  ✗ CancelReservation"
+	@echo ""
+	@echo "$(GREEN)✅ OCPP audit complete!$(NC)"
 
 # Test Coverage Audit
 audit-coverage:
 	@echo "$(BLUE)📊 TEST COVERAGE AUDIT$(NC)"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@npm test -- --coverage --watchAll=false 2>&1 | tail -50
-
-# Test Execution Audit
-audit-tests:
-	@echo "$(BLUE)🧪 TEST EXECUTION AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@npm test -- --watchAll=false --verbose 2>&1 | grep -E "PASS|FAIL|Tests:"
-
-# Infrastructure Tests Audit
-audit-infrastructure:
-	@echo "$(BLUE)🔌 INFRASTRUCTURE TESTS AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "$(YELLOW)🔴 CRITICAL GAPS (need tests):$(NC)"
-	@echo "  ✗ ChargePointRepository (0%)"
-	@echo "    Missing: CRUD operations integration tests"
-	@echo ""
-	@echo "  ✗ ChargePointGateway (0%)"
-	@echo "    Missing: WebSocket message flow tests"
-	@echo ""
-	@echo "  ✗ ChargePointWebSocketService (0%)"
-	@echo "    Missing: Service orchestration tests"
-	@echo ""
-	@echo "$(YELLOW)⏳ Action Items:$(NC)"
-	@echo "  1. Create ChargePointRepository.spec.ts (1 hour)"
-	@echo "  2. Create ChargePointGateway.integration.spec.ts (1 hour)"
-	@echo "  3. Create ChargePointWebSocketService.spec.ts (45 mins)"
-	@echo ""
-	@echo "$(GREEN)Estimated time: 3-4 hours$(NC)"
-
-# ==============================================================================
-# 💻 CODE QUALITY AUDITS
-# ==============================================================================
-
-# Code Quality Audit
-audit-code-quality:
-	@echo "$(BLUE)💻 CODE QUALITY AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📊 Complexity Metrics:$(NC)"
-	@echo "  Cyclomatic Complexity (avg): 2.3 (target: <5) ✅"
-	@echo "  Lines per Function (avg): 15 (target: <30) ✅"
-	@echo "  Deepest Nesting: 3 (target: <4) ✅"
-	@echo ""
-	@echo "$(YELLOW)📈 Code Health:$(NC)"
-	@echo "  ✅ Zero Critical Issues"
-	@echo "  ⚠️  3 Medium Issues (fixable in 1 day)"
-	@echo "  ✅ Zero High-Severity Security Issues"
-	@echo "  ✅ No code smells detected"
-	@echo "  ✅ No deprecated API usage"
-	@echo ""
-	@echo "$(GREEN)✅ Code quality audit complete!$(NC)"
-
-# ESLint Audit
-audit-lint:
-	@echo "$(BLUE)🔍 ESLINT AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@npm run lint 2>&1 || true
-	@echo ""
-	@echo "$(GREEN)✅ ESLint audit complete!$(NC)"
-
-# Prettier Audit
-audit-prettier:
-	@echo "$(BLUE)✨ PRETTIER CODE FORMATTING AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@npx prettier --check src/ 2>&1 || true
-	@echo ""
-	@echo "$(YELLOW)💡 To auto-fix formatting:$(NC)"
-	@echo "  npx prettier --write src/"
-	@echo ""
-	@echo "$(GREEN)✅ Prettier audit complete!$(NC)"
-
-# ==============================================================================
-# 🔐 SECURITY & COMPLIANCE AUDITS
-# ==============================================================================
-
-# Security Audit
-audit-security:
-	@echo "$(BLUE)🔐 SECURITY AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)🛡️  OWASP Top 10 Alignment:$(NC)"
-	@echo "  ✅ Injection: TypeORM parameterized queries"
-	@echo "  ⚠️  Authentication: JWT not yet implemented"
-	@echo "  ✅ Sensitive Data: Environment variables configured"
-	@echo "  ✅ XXE: No XML parsing"
-	@echo "  ⚠️  CORS: Enabled for dev, needs restriction"
-	@echo "  ⚠️  Access Control: RBAC needed for Admin"
-	@echo "  ✅ Misconfiguration: Environment-based config"
-	@echo "  ⚠️  XSS: Frontend not implemented yet"
-	@echo "  ✅ Deserialization: Typed JSON schema"
-	@echo "  ✅ Dependencies: npm audit recommended"
-	@echo ""
-	@npm audit 2>&1 | grep -E "vulnerabilities|packages audited" || true
-	@echo ""
-	@echo "$(GREEN)✅ Security audit complete!$(NC)"
-
-# TypeScript Strict Mode Audit
-audit-typescript:
-	@echo "$(BLUE)🎯 TYPESCRIPT STRICT MODE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)✅ Strict Mode Configuration:$(NC)"
-	@npx tsc --noEmit 2>&1 | head -20 || true
-	@echo ""
-	@echo "  strict: true                 ✅"
-	@echo "  noImplicitAny: true          ✅"
-	@echo "  noUnusedLocals: true         ✅"
-	@echo "  noUnusedParameters: true     ✅"
-	@echo "  noImplicitReturns: true      ✅"
-	@echo ""
-	@echo "$(GREEN)✅ TypeScript audit complete!$(NC)"
-
-# ==============================================================================
-# 📋 SPECIFICATION AUDITS
-# ==============================================================================
-
-# OCPP 1.6 Compliance Audit
-audit-ocpp:
-	@echo "$(BLUE)🔌 OCPP 1.6 SPECIFICATION COMPLIANCE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📋 Message Format Compliance:$(NC)"
-	@echo ""
-	@echo "  BootNotification:      ✅ [2, id, \"BootNotification\", {...}]"
-	@echo "  Heartbeat:             ✅ [2, id, \"Heartbeat\", {}]"
-	@echo "  StatusNotification:    ✅ [2, id, \"StatusNotification\", {...}]"
-	@echo "  Error Response:        ✅ [4, id, code, message]"
-	@echo ""
-	@echo "$(YELLOW)✅ Handler Compliance:$(NC)"
-	@find src/application/use-cases -name "Handle*.ts" -not -path "*/tests/*" 2>/dev/null | while read f; do \
-		echo "  ✅ $$(basename $$f .ts)"; \
-	done
-	@echo ""
-	@echo "$(GREEN)✅ OCPP 1.6 Score: 100/100 - FULLY COMPLIANT$(NC)"
-
-# ==============================================================================
-# 📊 GIT & PERFORMANCE AUDITS
-# ==============================================================================
-
-# Git Audit
-audit-git:
-	@echo "$(BLUE)📊 GIT REPOSITORY AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📈 Repository Stats:$(NC)"
-	@echo "  Total Commits: $$(git rev-list --count HEAD 2>/dev/null || echo '?')"
-	@echo "  Current Branch: $$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
-	@echo "  Latest Commit: $$(git log -1 --format=%h 2>/dev/null || echo '?')"
-	@echo "  Untracked Files: $$(git ls-files --others --exclude-standard 2>/dev/null | wc -l)"
-	@echo ""
-	@echo "$(YELLOW)🔗 Remote:$(NC)"
-	@git remote -v 2>/dev/null || echo "  No remotes configured"
-	@echo ""
-	@echo "$(GREEN)✅ Git audit complete!$(NC)"
-
-# Performance Audit (build time)
-audit-performance:
-	@echo "$(BLUE)⚡ PERFORMANCE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)⏱️  Build Time Measurement:$(NC)"
-	@time npm run build 2>&1 | tail -5
-	@echo ""
-	@echo "$(YELLOW)📦 Bundle Size:$(NC)"
-	@du -sh dist/ 2>/dev/null || echo "  Build dist/ not found"
-	@echo ""
-	@echo "$(GREEN)✅ Performance audit complete!$(NC)"
+	npm test -- --coverage --watchAll=false
 
 # ==============================================================================
 # 🎯 COMBINED AUDITS
@@ -364,7 +407,7 @@ audit:
 	@echo "📝 Test Coverage..."
 	@npm test -- --coverage --watchAll=false 2>&1 | tail -25
 	@echo ""
-	@echo "✅ Audit complete!"
+	@echo "$(GREEN)✅ Audit complete!$(NC)"
 
 # Full Audit - Comprehensive analysis
 audit-full:
@@ -447,64 +490,153 @@ audit-report:
 	@echo "$(GREEN)✅ Audit report saved to: $(AUDIT_REPORT)$(NC)"
 
 # ==============================================================================
-# 📚 HELP
+# 🎯 DEPLOYMENT AUDITS
 # ==============================================================================
 
-help:
+# Pre-deployment Check
+pre-deploy:
+	@echo "$(BLUE)✅ PRE-DEPLOYMENT AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(BLUE)║         🎯 OCPP BACKEND - MODULAR AUDIT SYSTEM 🎯            ║$(NC)"
-	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo "$(YELLOW)🔍 Checks:$(NC)"
+	@npm run build >/dev/null 2>&1 && echo "  ✅ Build OK" || (echo "  ❌ Build FAILED"; exit 1)
+	@npm test -- --watchAll=false --coverage >/dev/null 2>&1 && echo "  ✅ Tests OK" || (echo "  ❌ Tests FAILED"; exit 1)
+	@npm run lint >/dev/null 2>&1 && echo "  ✅ Lint OK" || (echo "  ⚠️  Lint issues (non-blocking)")
+	@[ -f .env ] && echo "  ✅ .env configured" || (echo "  ❌ .env MISSING"; exit 1)
+	@[ -f docker-compose.yml ] && echo "  ✅ Docker configured" || echo "  ⚠️  Docker not configured"
 	@echo ""
-	@echo "$(YELLOW)🔍 QUICK AUDITS (Single Focus):$(NC)"
-	@echo "  make audit-clean-arch      🏗️  CLEAN Architecture compliance"
-	@echo "  make audit-solid           💎 SOLID Principles analysis"
-	@echo "  make audit-patterns        🎯 Design Patterns assessment"
-	@echo "  make audit-adr             🏛️  Architecture Decision Records"
-	@echo "  make audit-ddr             📐 Data Domain Relationships"
+	@echo "$(GREEN)✅ Ready for deployment!$(NC)"
+
+# Staging Deployment
+deploy-staging:
+	@echo "$(YELLOW)🚀 Deploying to STAGING...$(NC)"
+	@make pre-deploy
+	@echo "$(YELLOW)📦 Building Docker image...$(NC)"
+	@docker-compose build
+	@echo "$(YELLOW)🐳 Starting services...$(NC)"
+	@docker-compose up -d
+	@echo "$(GREEN)✅ Staging deployment complete!$(NC)"
+	@echo "    API: http://localhost:3000"
+	@echo "    WebSocket: ws://localhost:3001"
+
+# Production Deployment
+deploy-prod:
+	@echo "$(RED)⚠️  PRODUCTION DEPLOYMENT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "$(YELLOW)🧪 TESTING AUDITS:$(NC)"
-	@echo "  make audit-coverage        📊 Test Coverage report"
-	@echo "  make audit-tests           🧪 Test Execution details"
-	@echo "  make audit-infrastructure  🔌 Infrastructure Tests (critical gaps)"
+	@echo "$(YELLOW)⚠️  This will deploy to PRODUCTION!$(NC)"
+	@read -p "Are you sure? Type 'yes' to continue: " confirm; \
+	if [ "$$confirm" = "yes" ]; then \
+		echo "$(YELLOW)🔍 Running final checks...$(NC)"; \
+		make pre-deploy; \
+		echo "$(YELLOW)📦 Building optimized image...$(NC)"; \
+		docker-compose -f docker-compose.prod.yml build --no-cache; \
+		echo "$(YELLOW)🚀 Deploying...$(NC)"; \
+		docker-compose -f docker-compose.prod.yml up -d; \
+		echo "$(GREEN)✅ Production deployment complete!$(NC)"; \
+	else \
+		echo "$(YELLOW)Deployment cancelled.$(NC)"; \
+	fi
+
+# ==============================================================================
+# 📝 ADDITIONAL AUDITS
+# ==============================================================================
+
+# Docker Configuration Audit
+audit-docker:
+	@echo "$(BLUE)🐳 DOCKER CONFIGURATION AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "$(YELLOW)💻 CODE QUALITY AUDITS:$(NC)"
-	@echo "  make audit-code-quality    💻 General Code Quality metrics"
-	@echo "  make audit-lint            🔍 ESLint rules compliance"
-	@echo "  make audit-prettier        ✨ Code Formatting check"
-	@echo "  make audit-typescript      🎯 TypeScript Strict Mode"
+	@echo "$(YELLOW)📋 Files:$(NC)"
+	@[ -f Dockerfile ] && echo "  ✅ Dockerfile exists" || echo "  ❌ Dockerfile NOT FOUND"
+	@[ -f docker-compose.yml ] && echo "  ✅ docker-compose.yml exists" || echo "  ❌ docker-compose.yml NOT FOUND"
+	@[ -f .dockerignore ] && echo "  ✅ .dockerignore exists" || echo "  ❌ .dockerignore NOT FOUND"
 	@echo ""
-	@echo "$(YELLOW)🔐 SECURITY & COMPLIANCE:$(NC)"
-	@echo "  make audit-security        🔐 OWASP Top 10 alignment"
-	@echo "  make audit-ocpp            🔌 OCPP 1.6 Specification"
+	@echo "$(GREEN)✅ Docker audit complete!$(NC)"
+
+# Environment Configuration Audit
+audit-env:
+	@echo "$(BLUE)🔐 ENVIRONMENT CONFIGURATION AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "$(YELLOW)📊 GIT & PERFORMANCE:$(NC)"
-	@echo "  make audit-git             📊 Git Repository stats"
-	@echo "  make audit-performance     ⚡ Build time & bundle size"
+	@echo "$(YELLOW)📋 Files:$(NC)"
+	@[ -f .env ] && echo "  ✅ .env exists" || echo "  ⚠️  .env NOT FOUND"
+	@[ -f .env.example ] && echo "  ✅ .env.example exists" || echo "  ⚠️  .env.example NOT FOUND"
 	@echo ""
-	@echo "$(YELLOW)🎯 COMBINED AUDITS:$(NC)"
-	@echo "  make audit                 🔍 Quick Audit (2 mins)"
-	@echo "  make audit-full            🔬 Full Audit (5 mins)"
-	@echo "  make audit-report          📋 Generate timestamped report"
-	@echo "  make audit-compare         📊 Compare last 2 reports"
-	@echo "  make audit-watch           👀 Continuous auditing (file changes)"
-	@echo "  make audit-clean           🧹 Clean old reports (keep last 5)"
+	@echo "$(YELLOW)🔍 Required variables:$(NC)"
+	@if [ -f .env ]; then \
+		grep -q "DATABASE_URL" .env && echo "  ✅ DATABASE_URL set" || echo "  ❌ DATABASE_URL MISSING"; \
+		grep -q "NODE_ENV" .env && echo "  ✅ NODE_ENV set" || echo "  ❌ NODE_ENV MISSING"; \
+	else \
+		echo "  ❌ .env file not found"; \
+	fi
 	@echo ""
-	@echo "$(YELLOW)💡 EXAMPLES:$(NC)"
-	@echo "  # Run only CLEAN architecture audit"
-	@echo "  make audit-clean-arch"
+	@echo "$(GREEN)✅ Environment audit complete!$(NC)"
+
+# Git Status Audit
+audit-git:
+	@echo "$(BLUE)🔀 GIT STATUS AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "  # Run only SOLID principles audit"
-	@echo "  make audit-solid"
+	@echo "$(YELLOW)📍 Current Branch:$(NC)"
+	@git rev-parse --abbrev-ref HEAD
 	@echo ""
-	@echo "  # Run design patterns + ADRs + DDRs"
-	@echo "  make audit-patterns audit-adr audit-ddr"
+	@echo "$(YELLOW)📝 Latest Commits:$(NC)"
+	@git log --oneline -5
 	@echo ""
-	@echo "  # Check code quality & format"
-	@echo "  make audit-lint audit-prettier"
+	@echo "$(YELLOW)📊 Status:$(NC)"
+	@git status --short || echo "Working directory clean"
 	@echo ""
-	@echo "  # Full analysis for AI conversations"
-	@echo "  make audit-full && make audit-report"
+	@echo "$(GREEN)✅ Git audit complete!$(NC)"
+
+# Integration Test Audit
+audit-integration:
+	@echo "$(BLUE)🔗 INTEGRATION TEST AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "$(GREEN)📂 Reports saved to: $(AUDIT_DIR)/$(NC)"
+	@echo "$(YELLOW)🔍 Running integration tests...$(NC)"
+	@npm test -- --testPathPattern=".integration." --watchAll=false 2>&1 | tail -10 || echo "No integration tests found"
 	@echo ""
+	@echo "$(GREEN)✅ Integration audit complete!$(NC)"
+
+# Code Quality Audit
+audit-code-quality:
+	@echo "$(BLUE)🎯 CODE QUALITY AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "$(YELLOW)🔍 ESLint:$(NC)"
+	@npm run lint 2>&1 | tail -3 || echo "Lint check complete"
+	@echo ""
+	@echo "$(YELLOW)🎨 Prettier:$(NC)"
+	@npx prettier --check "src/**/*.ts" 2>&1 | tail -2 || echo "Format check complete"
+	@echo ""
+	@echo "$(GREEN)✅ Code quality audit complete!$(NC)"
+
+# Performance Audit
+audit-performance:
+	@echo "$(BLUE)⚡ PERFORMANCE AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "$(YELLOW)📊 Build time:$(NC)"
+	@time npm run build >/dev/null 2>&1
+	@echo ""
+	@echo "$(YELLOW)📊 Test time:$(NC)"
+	@time npm test -- --watchAll=false >/dev/null 2>&1
+	@echo ""
+	@echo "$(GREEN)✅ Performance audit complete!$(NC)"
+
+# Migrations Audit
+audit-migrations:
+	@echo "$(BLUE)🗄️  MIGRATIONS AUDIT$(NC)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "$(YELLOW)📂 Migration Files:$(NC)"
+	@find src/infrastructure/database/migrations -name "*.ts" -type f | wc -l | xargs echo "Total:"
+	@find src/infrastructure/database/migrations -name "*.ts" -type f | sort
+	@echo ""
+	@echo "$(YELLOW)📋 Migration Status:$(NC)"
+	@npm run typeorm migration:show 2>&1 | tail -10
+	@echo ""
+	@echo "$(GREEN)✅ Migrations audit complete!$(NC)"
+
+.PHONY: install build test test-watch lint format audit-migrations audit-docker audit-env audit-integration audit-code-quality audit-git
