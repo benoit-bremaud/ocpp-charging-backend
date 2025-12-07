@@ -78,6 +78,15 @@ export class OcppSchema {
       required: ['connectorId', 'errorCode', 'status', 'timestamp'],
       additionalProperties: false,
     },
+
+    Authorize: {
+      type: 'object',
+      properties: {
+        idTag: { type: 'string', minLength: 1, maxLength: 20 },
+      },
+      required: ['idTag'],
+      additionalProperties: false,
+    },
   };
 
   /**
