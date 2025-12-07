@@ -359,7 +359,7 @@ audit:
 	@echo "$(BLUE)🔍 QUICK AUDIT - Essential Checks$(NC)"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "📂 Project Structure..."
-	@tree -L 2 src/ 2>/dev/null || find src -type d -not -path '*/node_modules/*' | head -20
+	@tree -L 4 src/ 2>/dev/null || find src -type d -not -path '*/node_modules/*' | head -20
 	@echo ""
 	@echo "📝 Test Coverage..."
 	@npm test -- --coverage --watchAll=false 2>&1 | tail -25

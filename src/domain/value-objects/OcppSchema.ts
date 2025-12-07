@@ -52,16 +52,15 @@ export class OcppSchema {
             'ConnectorLockFailure',
             'EVCommunicationError',
             'GroundFailure',
-            'HighVoltage',
+            'HighTemperature',
             'InternalError',
             'LocalListConflict',
-            'LowVoltage',
-            'NoContactorError',
             'OtherError',
             'OverCurrentFailure',
+            'OverVoltage',
             'PowerMeterFailure',
             'PowerSwitchFailure',
-            'ReaderErrorEvent',
+            'ReaderFailure',
             'ResetFailure',
             'UnderVoltage',
             'WeakSignal',
@@ -89,9 +88,6 @@ export class OcppSchema {
     },
   };
 
-  /**
-   * Validate payload against OCPP schema for given action.
-   */
   static validate(
     action: string,
     payload: Record<string, any>,
@@ -107,14 +103,12 @@ export class OcppSchema {
 
     const errors: string[] = [];
 
-    // Check required fields
     for (const required of schema.required) {
       if (!(required in payload)) {
         errors.push(`Missing required field: ${required}`);
       }
     }
 
-    // Check no additional properties
     if (!schema.additionalProperties) {
       for (const key of Object.keys(payload)) {
         if (!(key in schema.properties)) {
@@ -123,13 +117,11 @@ export class OcppSchema {
       }
     }
 
-    // Validate field types and constraints
     for (const [key, value] of Object.entries(payload)) {
       const propSchema = schema.properties[key];
 
       if (!propSchema) continue;
 
-      // Type check
       if (propSchema.type === 'integer' && typeof value !== 'number') {
         errors.push(`Field '${key}' must be integer, got: ${typeof value}`);
       } else if (propSchema.type === 'string' && typeof value !== 'string') {
@@ -138,26 +130,22 @@ export class OcppSchema {
         errors.push(`Field '${key}' must be object, got: ${typeof value}`);
       }
 
-      // Enum check
       if (propSchema.enum && !propSchema.enum.includes(value)) {
         errors.push(`Field '${key}' must be one of [${propSchema.enum.join(', ')}], got: ${value}`);
       }
 
-      // String length check
       if (propSchema.maxLength && typeof value === 'string') {
         if (value.length > propSchema.maxLength) {
           errors.push(`Field '${key}' exceeds max length ${propSchema.maxLength}`);
         }
       }
 
-      // Integer range check
       if (propSchema.minimum !== undefined && typeof value === 'number') {
         if (value < propSchema.minimum) {
           errors.push(`Field '${key}' must be >= ${propSchema.minimum}, got: ${value}`);
         }
       }
 
-      // ISO 8601 timestamp check
       if (propSchema.format === 'date-time' && typeof value === 'string') {
         if (!this.isValidIso8601(value)) {
           errors.push(`Field '${key}' must be ISO 8601 timestamp, got: ${value}`);
@@ -171,17 +159,11 @@ export class OcppSchema {
     };
   }
 
-  /**
-   * Check if string is valid ISO 8601 timestamp.
-   */
   private static isValidIso8601(value: string): boolean {
     const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.?\d{0,3})?Z?$/;
     return iso8601Regex.test(value);
   }
 
-  /**
-   * Get schema for action.
-   */
   static getSchema(action: string): OcppSchemaDefinition | null {
     return this.SCHEMAS[action] || null;
   }
