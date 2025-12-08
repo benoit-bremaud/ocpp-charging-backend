@@ -1,47 +1,37 @@
-import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { HttpLoggingInterceptor } from './infrastructure/logger/http-logging.interceptor';
+import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { createSwaggerConfig } from './swagger.config';
-import * as fs from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global validation
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  // Use Winston as the main logger
+  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
-  // Swagger configuration
+  // Global Interceptors
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
+
+  // Swagger Setup (Centralized Config)
   const swaggerConfig = createSwaggerConfig();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
 
+  // Setup Swagger UI with custom options
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
-      persistAuthorization: true,
-      docExpansion: 'none',
       filter: true,
-      showRequestDuration: true,
+      showRequestHeaders: true,
+      persistAuthorization: true,
     },
-    customSiteTitle: 'OCPP Backend API Docs',
   });
 
-  // Export OpenAPI spec
-  fs.writeFileSync('./openapi.json', JSON.stringify(document, null, 2));
+  // Start Server
+  await app.listen(process.env.PORT ?? 3000);
 
-  const port = 3001;
-  const host = '0.0.0.0';
-  await app.listen(port, host);
-
-  const baseUrl = `http://localhost:${port}`;
-  console.log(`Application is running on: ${baseUrl}`);
-  console.log(`Swagger UI is available at: ${baseUrl}/api/docs`);
-  console.log(`OpenAPI JSON is available at: ${baseUrl}/api/docs-json`);
+  const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
+  logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Swagger UI available at: ${await app.getUrl()}/api/docs`);
 }
-
 bootstrap();
