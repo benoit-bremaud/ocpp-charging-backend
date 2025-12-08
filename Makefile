@@ -1,642 +1,346 @@
-.PHONY: help \
-    audit audit-full audit-clean \
-    audit-clean-arch audit-solid audit-patterns audit-adr audit-ddr \
-    audit-coverage audit-tests audit-infrastructure \
-    audit-code-quality audit-lint audit-prettier audit-security \
-    audit-typescript audit-ocpp audit-performance \
-    audit-git audit-report audit-compare audit-watch \
-    health db-health \
-    status \
-    db-migrate-up db-migrate-down db-migrate-status db-migrations-list \
-    audit-migrations audit-docker audit-env audit-integration \
-    pre-deploy deploy-staging deploy-prod
+# ============================================================================
+# OCPP Charging Backend - Makefile
+# ============================================================================
+# Comprehensive development, testing, and deployment commands
+# Usage: make <target>
+# ============================================================================
 
-.SILENT:
+.PHONY: help install build start stop logs clean test test-cov test-e2e \
+        test-e2e-init test-e2e-debug test-all lint format docker-build \
+        docker-push db-init db-clean db-reset env-setup audit security
 
-# Configuration
-AUDIT_DIR := .audits
-TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
-AUDIT_REPORT := $(AUDIT_DIR)/AUDIT_$(TIMESTAMP).md
+# Default target
+.DEFAULT_GOAL := help
 
-# Colors for output
-RED := \033[0;31m
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
-BLUE := \033[0;34m
-CYAN := \033[0;36m
-MAGENTA := \033[0;35m
-NC := \033[0m # No Color
+# ============================================================================
+# 🎯 HELP
+# ============================================================================
 
-# ==============================================================================
-# 📚 HELP - Complete Command Reference
-# ==============================================================================
-
-help:
-	@echo "$(BLUE)╔══════════════════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(BLUE)║  🚀 OCPP CHARGING BACKEND - MAKEFILE COMMANDS                           ║$(NC)"
-	@echo "$(BLUE)╚══════════════════════════════════════════════════════════════════════════╝$(NC)"
+help: ## Show this help message
+	@echo "╔════════════════════════════════════════════════════════════════╗"
+	@echo "║    OCPP Charging Backend - Development & Testing Commands      ║"
+	@echo "╚════════════════════════════════════════════════════════════════╝"
 	@echo ""
-	@echo "$(MAGENTA)📊 QUICK STATUS$(NC)"
-	@echo "  $(CYAN)make status$(NC)              Show project status (git, tests)"
-	@echo "  $(CYAN)make health$(NC)              Complete health check (build, tests, DB)"
-	@echo "  $(CYAN)make db-health$(NC)           Database connection check"
+	@echo "Usage: make <target>"
 	@echo ""
-	@echo "$(MAGENTA)📦 BUILD & TEST$(NC)"
-	@echo "  $(CYAN)make install$(NC)             Install dependencies (npm install)"
-	@echo "  $(CYAN)make build$(NC)               Build project (npm run build)"
-	@echo "  $(CYAN)make test$(NC)                Run all tests (npm test)"
-	@echo "  $(CYAN)make test-watch$(NC)          Run tests in watch mode"
-	@echo "  $(CYAN)make lint$(NC)                Run ESLint (npm run lint)"
-	@echo "  $(CYAN)make format$(NC)              Format code with Prettier (npm run format)"
+	@echo "📦 INSTALLATION & SETUP"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(install|setup|env)' | awk 'BEGIN {FS = ":.*?## "} {printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(MAGENTA)🗄️  DATABASE MIGRATIONS$(NC)"
-	@echo "  $(CYAN)make db-migrate-up$(NC)       Run pending migrations"
-	@echo "  $(CYAN)make db-migrate-down$(NC)     Revert last migration"
-	@echo "  $(CYAN)make db-migrate-status$(NC)   Show migration status"
-	@echo "  $(CYAN)make db-migrations-list$(NC)  List all migration files"
+	@echo "🏗️  BUILD & START"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(build|start|stop|logs)' | awk 'BEGIN {FS = ":.*?## "} {printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(MAGENTA)🔍 AUDITS - Single Focus$(NC)"
-	@echo "  $(CYAN)make audit$(NC)               Quick audit (tests + structure)"
-	@echo "  $(CYAN)make audit-full$(NC)          Comprehensive audit (all checks)"
-	@echo "  $(CYAN)make audit-clean-arch$(NC)    CLEAN Architecture layers"
-	@echo "  $(CYAN)make audit-solid$(NC)         SOLID Principles compliance"
-	@echo "  $(CYAN)make audit-patterns$(NC)      Design patterns analysis"
-	@echo "  $(CYAN)make audit-adr$(NC)           Architecture Decision Records"
-	@echo "  $(CYAN)make audit-ddr$(NC)           Data Domain Relationships"
-	@echo "  $(CYAN)make audit-typescript$(NC)    TypeScript configuration"
-	@echo "  $(CYAN)make audit-ocpp$(NC)          OCPP protocol compliance"
-	@echo "  $(CYAN)make audit-coverage$(NC)      Test coverage detailed report"
-	@echo "  $(CYAN)make audit-docker$(NC)        Docker configuration check"
-	@echo "  $(CYAN)make audit-env$(NC)           Environment setup validation"
+	@echo "🧪 TESTING"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(test|lint)' | awk 'BEGIN {FS = ":.*?## "} {printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(MAGENTA)📊 AUDIT MANAGEMENT$(NC)"
-	@echo "  $(CYAN)make audit-clean$(NC)         Remove old audit reports (keep last 5)"
-	@echo "  $(CYAN)make audit-report$(NC)        Generate comprehensive report"
-	@echo "  $(CYAN)make audit-compare$(NC)       Compare last 2 audit reports"
-	@echo "  $(CYAN)make audit-watch$(NC)         Watch mode (continuous auditing)"
+	@echo "🗄️  DATABASE"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(db-)' | awk 'BEGIN {FS = ":.*?## "} {printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(MAGENTA)🚀 DEPLOYMENT$(NC)"
-	@echo "  $(CYAN)make pre-deploy$(NC)          Run all pre-deployment checks"
-	@echo "  $(CYAN)make deploy-staging$(NC)      Deploy to staging environment"
-	@echo "  $(CYAN)make deploy-prod$(NC)         Deploy to production (⚠️  CAREFUL)"
+	@echo "🐳 DOCKER"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(docker)' | awk 'BEGIN {FS = ":.*?## "} {printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(MAGENTA)🛠️  UTILITIES$(NC)"
-	@echo "  $(CYAN)make help$(NC)                Show this help message"
-	@echo ""
-	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo ""
-	@echo "$(YELLOW)📝 EXAMPLES:$(NC)"
-	@echo "  $(CYAN)make health              # Full system check$(NC)"
-	@echo "  $(CYAN)make db-migrate-up       # Run pending migrations$(NC)"
-	@echo "  $(CYAN)make audit               # Quick validation$(NC)"
-	@echo "  $(CYAN)make audit-full          # Complete analysis$(NC)"
-	@echo "  $(CYAN)make pre-deploy          # Pre-deployment checklist$(NC)"
-	@echo ""
-	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-
-# ==============================================================================
-# 🎯 QUICK SYSTEM CHECKS
-# ==============================================================================
-
-# Complete Health Check
-health:
-	@echo "$(BLUE)🏥 COMPLETE SYSTEM HEALTH CHECK$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)🔍 Checking Node.js...$(NC)"
-	@node --version && echo "  ✅ Node.js OK" || { echo "  ❌ Node.js NOT FOUND"; exit 1; }
-	@echo ""
-	@echo "$(YELLOW)🔍 Checking npm...$(NC)"
-	@npm --version && echo "  ✅ npm OK" || { echo "  ❌ npm NOT FOUND"; exit 1; }
-	@echo ""
-	@echo "$(YELLOW)🔍 Checking dependencies...$(NC)"
-	@[ -d node_modules ] && echo "  ✅ Dependencies installed" || (echo "  ⚠️  Installing..."; npm install)
-	@echo ""
-	@echo "$(YELLOW)🔍 Building project...$(NC)"
-	@npm run build >/dev/null 2>&1 && echo "  ✅ Build OK" || { echo "  ❌ Build FAILED"; exit 1; }
-	@echo ""
-	@echo "$(YELLOW)🔍 Running tests...$(NC)"
-	@npm test -- --watchAll=false --passWithNoTests 2>&1 | tail -1 && echo "  ✅ Tests OK" || { echo "  ⚠️  Some tests failed"; }
-	@echo ""
-	@echo "$(YELLOW)🔍 Checking database...$(NC)"
-	@make db-health
-	@echo ""
-	@echo "$(GREEN)✅ System health check complete!$(NC)"
-
-# Database Health Check
-db-health:
-	@echo "$(BLUE)🗄️  DATABASE HEALTH CHECK$(NC)"
-	@if [ -z "$$DATABASE_URL" ]; then \
-		echo "  ⚠️  DATABASE_URL not set, trying default..."; \
-		export DATABASE_URL="postgres://postgres:postgres@localhost:5432/ocpp_db"; \
-	fi
-	@npm run typeorm query "SELECT NOW()" >/dev/null 2>&1 && echo "  ✅ Database connection OK" || echo "  ❌ Database connection FAILED"
-	@npm run typeorm query "SELECT COUNT(*) as tables FROM information_schema.tables WHERE table_schema = 'public'" >/dev/null 2>&1 && echo "  ✅ Schema accessible" || echo "  ⚠️  Schema check failed"
-
-# Quick Status
-status:
-	@echo "$(BLUE)📊 PROJECT STATUS$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "Branch: $$(git rev-parse --abbrev-ref HEAD)"
-	@echo "Commit: $$(git log -1 --pretty=format:%h) - $$(git log -1 --pretty=format:%s)"
-	@echo "Changes: $$(git status --porcelain | wc -l) files"
-	@echo ""
-	@npm test -- --watchAll=false --passWithNoTests 2>&1 | grep -E "(Tests:|PASS|FAIL)" | head -1 || echo "Tests: (not run yet)"
+	@echo "🔒 SECURITY & QUALITY"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(audit|security)' | awk 'BEGIN {FS = ":.*?## "} {printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
 
-# ==============================================================================
-# 🎯 BUILD & TEST COMMANDS
-# ==============================================================================
+# ============================================================================
+# 📦 INSTALLATION & SETUP
+# ============================================================================
 
-install:
-	@echo "$(BLUE)📦 Installing dependencies...$(NC)"
-	npm install
-	@echo "$(GREEN)✅ Dependencies installed!$(NC)"
+install: ## Install all dependencies (npm install --legacy-peer-deps)
+	@echo "📦 Installing dependencies..."
+	npm install --legacy-peer-deps
+	@echo "✅ Dependencies installed!"
 
-build:
-	@echo "$(BLUE)🔨 Building project...$(NC)"
+install-ci: ## Clean install for CI/CD (npm ci --legacy-peer-deps)
+	@echo "📦 Running clean install for CI..."
+	npm ci --legacy-peer-deps
+	@echo "✅ Clean install complete!"
+
+env-setup: ## Setup environment files (.env, .env.test)
+	@echo "🔧 Setting up environment files..."
+	@if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "⚠️  No .env.example found"; fi
+	@if [ ! -f .env.test ]; then echo "⚠️  .env.test already exists"; fi
+	@echo "✅ Environment files ready!"
+
+# ============================================================================
+# 🏗️  BUILD & START
+# ============================================================================
+
+build: ## Build the NestJS application (npm run build)
+	@echo "🏗️  Building application..."
 	npm run build
-	@echo "$(GREEN)✅ Build complete!$(NC)"
+	@echo "✅ Build complete!"
 
-test:
-	@echo "$(BLUE)🧪 Running tests...$(NC)"
-	npm test -- --watchAll=false
+start: ## Start the application in production mode
+	@echo "🚀 Starting application..."
+	npm run start
+	@echo "✅ Application started!"
 
-test-watch:
-	@echo "$(BLUE)🧪 Running tests in watch mode...$(NC)"
+start-dev: ## Start the application in development mode (hot reload)
+	@echo "🚀 Starting application in development mode..."
+	npm run start:dev
+	@echo "✅ Development mode active!"
+
+start-debug: ## Start the application in debug mode
+	@echo "🐛 Starting application in debug mode..."
+	npm run start:debug
+	@echo "✅ Debug mode active! Connect your debugger to port 9229"
+
+stop: ## Stop all Docker containers
+	@echo "🛑 Stopping containers..."
+	docker compose down
+	@echo "✅ Containers stopped!"
+
+logs: ## Show Docker container logs (follow mode)
+	@echo "📋 Showing logs..."
+	docker compose logs -f
+
+logs-app: ## Show application logs only
+	@echo "📋 Showing app logs..."
+	docker compose logs -f app
+
+logs-db: ## Show database logs only
+	@echo "📋 Showing database logs..."
+	docker compose logs -f postgres
+
+# ============================================================================
+# 🧪 TESTING
+# ============================================================================
+
+test: ## Run unit tests (npm test)
+	@echo "🧪 Running unit tests..."
 	npm test
+	@echo "✅ Unit tests complete!"
 
-lint:
-	@echo "$(BLUE)🔍 Running ESLint...$(NC)"
+test-watch: ## Run unit tests in watch mode
+	@echo "👀 Running unit tests in watch mode..."
+	npm run test:watch
+
+test-cov: ## Run unit tests with coverage report
+	@echo "📊 Running unit tests with coverage..."
+	npm run test:cov
+	@echo "✅ Coverage report ready in ./coverage"
+
+test-debug: ## Run unit tests in debug mode
+	@echo "🐛 Running unit tests in debug mode..."
+	npm run test:debug
+
+test-e2e-init: ## Initialize E2E test database
+	@echo "🗄️  Initializing E2E test database..."
+	npm run test:e2e:init
+	@echo "✅ E2E test database ready!"
+
+test-e2e: test-e2e-init ## Run E2E tests (initializes DB first)
+	@echo "🧪 Running E2E tests..."
+	npm run test:e2e -- --runInBand
+	@echo "✅ E2E tests complete!"
+
+test-e2e-single: ## Run single E2E test - Usage: make test-e2e-single TEST=01-chargepoint
+	@echo "🧪 Running single E2E test: $(TEST)..."
+	npm run test:e2e -- --testPathPatterns=$(TEST) --runInBand
+	@echo "✅ E2E test complete!"
+
+test-e2e-debug: ## Run E2E tests in debug mode
+	@echo "🐛 Running E2E tests in debug mode..."
+	npm run test:e2e -- --runInBand --verbose
+
+test-all: test test-e2e ## Run all tests (unit + E2E)
+	@echo "✅ All tests complete!"
+
+lint: ## Lint TypeScript code (ESLint)
+	@echo "🔍 Linting code..."
 	npm run lint
+	@echo "✅ Linting complete!"
 
-format:
-	@echo "$(BLUE)✨ Formatting code...$(NC)"
+format: ## Format code with Prettier
+	@echo "✨ Formatting code..."
 	npm run format
+	@echo "✅ Formatting complete!"
 
-# ==============================================================================
-# 🗄️  DATABASE MIGRATION MANAGEMENT
-# ==============================================================================
+format-check: ## Check code formatting without changes
+	@echo "🔍 Checking code format..."
+	npm run format:check
+	@echo "✅ Format check complete!"
 
-# Run pending migrations
-db-migrate-up:
-	@echo "$(BLUE)🚀 Running pending migrations...$(NC)"
-	npm run typeorm migration:run
-	@echo "$(GREEN)✅ Migrations completed!$(NC)"
+# ============================================================================
+# 🗄️  DATABASE
+# ============================================================================
 
-# Revert last migration
-db-migrate-down:
-	@echo "$(YELLOW)⏮️  Reverting last migration...$(NC)"
-	npm run typeorm migration:revert
-	@echo "$(GREEN)✅ Migration reverted!$(NC)"
+db-init: ## Initialize databases (dev + test)
+	@echo "🗄️  Initializing databases..."
+	docker compose up -d postgres
+	@sleep 10
+	npm run test:e2e:init
+	@echo "✅ Databases initialized!"
 
-# Show migration status
-db-migrate-status:
-	@echo "$(BLUE)📋 Migration Status:$(NC)"
-	npm run typeorm migration:show
+db-clean: ## Drop and recreate databases (⚠️  DESTRUCTIVE)
+	@echo "⚠️  WARNING: This will delete all data!"
+	@read -p "Continue? (y/n) " confirm && [ "$${confirm}" = "y" ] || (echo "Aborted"; exit 1)
+	docker compose down
+	docker volume rm ocpp-charging-backend_postgres_data 2>/dev/null || true
+	docker compose up -d postgres
+	@sleep 10
+	npm run test:e2e:init
+	@echo "✅ Databases recreated!"
 
-# List all migration files
-db-migrations-list:
-	@echo "$(BLUE)📂 Migration Files:$(NC)"
-	@find src/infrastructure/database/migrations -name "*.ts" -type f | sort
+db-reset: db-clean ## Alias for db-clean
 
-# ==============================================================================
-# 🎯 QUICK AUDITS - Single Focus
-# ==============================================================================
+db-logs: ## Show database logs
+	@echo "📋 Showing database logs..."
+	docker compose logs -f postgres
 
-# CLEAN Architecture Audit
-audit-clean-arch:
-	@echo "$(BLUE)🏗️  CLEAN ARCHITECTURE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📂 Layer Structure:$(NC)"
-	@find src -maxdepth 2 -type d | grep -E "(domain|application|infrastructure|presentation)" | sort
-	@echo ""
-	@echo "$(YELLOW)✅ CLEAN Principles Check:$(NC)"
-	@echo "  ✓ Dependency Rule (inward only)"
-	@echo "  ✓ Domain independence (0 framework deps)"
-	@echo "  ✓ Testability (no frameworks needed)"
-	@echo "  ✓ UI Independence"
-	@echo "  ✓ Database Independence"
-	@echo ""
-	@echo "$(YELLOW)📊 Layer Analysis:$(NC)"
-	@echo "  Domain Layer:"
-	@find src/domain -name "*.ts" -not -path "*/tests/*" 2>/dev/null | wc -l | xargs echo "    Files:"
-	@echo "  Application Layer:"
-	@find src/application -name "*.ts" -not -path "*/tests/*" 2>/dev/null | wc -l | xargs echo "    Files:"
-	@echo "  Infrastructure Layer:"
-	@find src/infrastructure -name "*.ts" -not -path "*/tests/*" 2>/dev/null | wc -l | xargs echo "    Files:"
-	@echo "  Presentation Layer:"
-	@find src/presentation -name "*.ts" -not -path "*/tests/*" 2>/dev/null | wc -l | xargs echo "    Files:"
-	@echo ""
-	@echo "$(GREEN)✅ CLEAN Architecture audit complete!$(NC)"
+db-shell: ## Connect to PostgreSQL shell
+	@echo "🔌 Connecting to PostgreSQL..."
+	docker compose exec postgres psql -U ocpp_user -d ocpp_db
 
-# SOLID Principles Audit
-audit-solid:
-	@echo "$(BLUE)💎 SOLID PRINCIPLES AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📋 SOLID Checklist:$(NC)"
-	@echo ""
-	@echo "  S - Single Responsibility Principle:"
-	@find src/application/use-cases -name "*.ts" -not -path "*/tests/*" | while read f; do echo "    ✓ $$(basename $$f)"; done
-	@echo ""
-	@echo "  O - Open/Closed Principle:"
-	@echo "    ✓ Handler registry pattern (extensible)"
-	@echo "    ✓ Channel adapters (new adapters without modification)"
-	@echo "    ✓ Value object validation (reusable)"
-	@echo ""
-	@echo "  L - Liskov Substitution:"
-	@echo "    ✓ All handlers implement consistent interface"
-	@echo "    ✓ Repository contract honored"
-	@echo ""
-	@echo "  I - Interface Segregation:"
-	@echo "    ✓ IChargePointRepository (focused)"
-	@echo "    ✓ OcppMessage (only necessary fields)"
-	@echo "    ✓ Segregated DTOs (use-case specific)"
-	@echo ""
-	@echo "  D - Dependency Inversion:"
-	@echo "    ✓ All handlers depend on abstractions"
-	@echo "    ✓ NestJS DI container configured"
-	@echo "    ✓ Token-based injection"
-	@echo ""
-	@echo "$(GREEN)✅ SOLID audit complete! Score: 95/100$(NC)"
+# ============================================================================
+# 🐳 DOCKER
+# ============================================================================
 
-# Design Patterns Audit
-audit-patterns:
-	@echo "$(BLUE)🎯 DESIGN PATTERNS AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)✅ Implemented Patterns:$(NC)"
-	@echo "  1. Repository Pattern"
-	@echo "     📍 ChargePointRepository"
-	@echo "     ✓ Clean data access abstraction"
-	@echo ""
-	@echo "  2. Factory Pattern"
-	@echo "     📍 OcppResponseBuilders"
-	@echo "     ✓ Response object creation"
-	@echo ""
-	@echo "  3. Strategy Pattern"
-	@echo "     📍 Handler Registry"
-	@echo "     ✓ Multiple handler strategies"
-	@echo ""
-	@echo "  4. Adapter Pattern"
-	@echo "     📍 ChargePointGateway"
-	@echo "     ✓ WebSocket to domain mapping"
-	@echo ""
-	@echo "  5. Decorator Pattern"
-	@echo "     📍 NestJS @Injectable, @WebSocketGateway"
-	@echo "     ✓ Metadata injection"
-	@echo ""
-	@echo "  6. Value Object Pattern"
-	@echo "     📍 OcppMessage, OcppContext"
-	@echo "     ✓ Immutable domain values"
-	@echo ""
-	@echo "$(YELLOW)⏳ Future Patterns (TODO):$(NC)"
-	@echo "  ✗ Observer Pattern (EventEmitter)"
-	@echo "  ✗ Mediator Pattern (complex flows)"
-	@echo "  ✗ Chain of Responsibility (validation)"
-	@echo ""
-	@echo "$(GREEN)✅ Design patterns audit complete!$(NC)"
+docker-build: ## Build Docker image
+	@echo "🐳 Building Docker image..."
+	docker compose build
+	@echo "✅ Docker image built!"
 
-# ADR (Architecture Decision Records) Audit
-audit-adr:
-	@echo "$(BLUE)🏛️  ARCHITECTURE DECISION RECORDS (ADRs) AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📝 Active ADRs:$(NC)"
-	@echo ""
-	@echo "  ADR-001: CLEAN Architecture with NestJS"
-	@echo "  Status: ✅ Implemented"
-	@echo "  Impact: Testable, maintainable, framework-independent core"
-	@echo ""
-	@echo "  ADR-002: OCPP 1.6 Handler Pattern"
-	@echo "  Status: ✅ Implemented"
-	@echo "  Impact: Easy to add new message types, OCP principle"
-	@echo ""
-	@echo "  ADR-003: WebSocket with NestJS 11"
-	@echo "  Status: ✅ Implemented"
-	@echo "  Impact: Type-safe, integrated with NestJS DI, easy testing"
-	@echo ""
-	@echo "  ADR-004: TypeORM for Persistence"
-	@echo "  Status: ✅ Implemented"
-	@echo "  Impact: Type-safe queries, migrations, clean repository layer"
-	@echo ""
-	@echo "$(YELLOW)🔲 Future ADRs (TODO):$(NC)"
-	@echo "  ✗ ADR-005: Caching Strategy (Redis)"
-	@echo "  ✗ ADR-006: Event Sourcing for Transactions"
-	@echo "  ✗ ADR-007: API Rate Limiting"
-	@echo ""
-	@echo "$(GREEN)✅ ADR audit complete!$(NC)"
+docker-up: ## Start Docker containers (detached)
+	@echo "🐳 Starting Docker containers..."
+	docker compose up -d
+	@sleep 5
+	@echo "✅ Docker containers started!"
 
-# DDR (Data Domain Relationships) Audit
-audit-ddr:
-	@echo "$(BLUE)📐 DATA DOMAIN RELATIONSHIPS (DDR) AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📊 Entity Relationships:$(NC)"
-	@echo ""
-	@echo "  ChargePoint (1) ──→ (Many) Connector [TODO - PRIORITY 1]"
-	@echo "  ChargePoint (1) ──→ (Many) Transaction [TODO - PRIORITY 2]"
-	@echo "  Connector (1) ──→ (Many) MeterValue [TODO - PRIORITY 2]"
-	@echo "  Transaction (1) ──→ (Many) StatusChange [TODO - PRIORITY 3]"
-	@echo ""
-	@echo "$(YELLOW)✅ Current Entities:$(NC)"
-	@find src/domain/entities -name "*.ts" -not -path "*/tests/*" 2>/dev/null | while read f; do echo "    📍 $$(basename $$f .ts)"; done
-	@echo ""
-	@echo "$(YELLOW)⏳ Needed Entities (PRIORITY 1):$(NC)"
-	@echo "  🔲 Connector (OneToMany with ChargePoint)"
-	@echo "  🔲 Transaction (OneToMany with ChargePoint)"
-	@echo "  🔲 MeterValue (OneToMany with Transaction)"
-	@echo ""
-	@echo "$(GREEN)✅ DDR audit complete!$(NC)"
+docker-down: ## Stop and remove Docker containers
+	@echo "🛑 Stopping Docker containers..."
+	docker compose down
+	@echo "✅ Docker containers stopped!"
 
-# TypeScript Configuration Audit
-audit-typescript:
-	@echo "$(BLUE)🔷 TYPESCRIPT CONFIGURATION AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📋 Checking tsconfig.json:$(NC)"
-	@[ -f tsconfig.json ] && echo "  ✅ tsconfig.json exists" || echo "  ❌ tsconfig.json MISSING"
-	@echo ""
-	@echo "$(YELLOW)🔍 Compilation check:$(NC)"
-	@npx tsc --noEmit 2>&1 | head -5 && echo "  ✅ No TypeScript errors" || echo "  ⚠️  TypeScript issues found"
-	@echo ""
-	@echo "$(GREEN)✅ TypeScript audit complete!$(NC)"
+docker-ps: ## Show running Docker containers
+	@echo "🐳 Running containers:"
+	docker compose ps
 
-# OCPP Compliance Audit
-audit-ocpp:
-	@echo "$(BLUE)⚡ OCPP 1.6 COMPLIANCE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)✅ Supported Messages:$(NC)"
-	@echo "  ✓ BootNotification"
-	@echo "  ✓ Heartbeat"
-	@echo "  ✓ Authorize"
-	@echo "  ✓ StartTransaction"
-	@echo "  ✓ StopTransaction"
-	@echo "  ✓ MeterValues"
-	@echo "  ✓ StatusNotification"
-	@echo ""
-	@echo "$(YELLOW)⏳ TODO Messages:$(NC)"
-	@echo "  ✗ FirmwareStatusNotification"
-	@echo "  ✗ DiagnosticsStatusNotification"
-	@echo "  ✗ ReserveNow"
-	@echo "  ✗ CancelReservation"
-	@echo ""
-	@echo "$(GREEN)✅ OCPP audit complete!$(NC)"
+docker-logs: ## Show Docker logs (all services)
+	@echo "📋 Showing Docker logs..."
+	docker compose logs -f
 
-# Test Coverage Audit
-audit-coverage:
-	@echo "$(BLUE)📊 TEST COVERAGE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	npm test -- --coverage --watchAll=false
+docker-clean: ## Remove all Docker images and volumes (⚠️  DESTRUCTIVE)
+	@echo "⚠️  WARNING: This will delete all Docker data!"
+	@read -p "Continue? (y/n) " confirm && [ "$${confirm}" = "y" ] || (echo "Aborted"; exit 1)
+	docker compose down -v
+	@echo "✅ Docker cleanup complete!"
 
-# ==============================================================================
-# 🎯 COMBINED AUDITS
-# ==============================================================================
+# ============================================================================
+# 🔒 SECURITY & QUALITY
+# ============================================================================
 
-# Quick Audit - All essential checks
-audit:
-	@echo "$(BLUE)🔍 QUICK AUDIT - Essential Checks$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "📂 Project Structure..."
-	@tree -L 4 src/ 2>/dev/null || find src -type d -not -path '*/node_modules/*' | head -20
-	@echo ""
-	@echo "📝 Test Coverage..."
-	@npm test -- --coverage --watchAll=false 2>&1 | tail -25
-	@echo ""
-	@echo "$(GREEN)✅ Audit complete!$(NC)"
+audit: ## Run npm security audit
+	@echo "🔍 Running security audit..."
+	npm audit
+	@echo "✅ Audit complete!"
 
-# Full Audit - Comprehensive analysis
-audit-full:
-	@echo "$(BLUE)🔬 FULL AUDIT - Comprehensive Analysis$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@make audit
+audit-fix: ## Fix npm security vulnerabilities
+	@echo "🔧 Fixing security vulnerabilities..."
+	npm audit fix
+	@echo "✅ Vulnerabilities fixed!"
+
+security: audit ## Alias for audit
+
+typescript-check: ## Check TypeScript compilation
+	@echo "🔷 Checking TypeScript compilation..."
+	npx tsc --noEmit
+	@echo "✅ TypeScript check passed!"
+
+# ============================================================================
+# 🧹 CLEANUP
+# ============================================================================
+
+clean: ## Remove build artifacts and temporary files
+	@echo "🧹 Cleaning up..."
+	rm -rf dist
+	rm -rf coverage
+	rm -rf node_modules/.cache
+	@echo "✅ Cleanup complete!"
+
+clean-all: clean ## Clean everything including node_modules
+	@echo "🧹 Deep cleaning..."
+	rm -rf node_modules
+	rm -f package-lock.json
+	@echo "✅ Deep cleanup complete!"
+
+# ============================================================================
+# 📊 PROJECT STATUS & INFO
+# ============================================================================
+
+status: docker-ps ## Show project status
 	@echo ""
-	@make audit-clean-arch
+	@echo "🔷 TypeScript:"
+	@npx tsc --version
 	@echo ""
-	@make audit-solid
+	@echo "🐳 Docker Compose:"
+	@docker compose --version
 	@echo ""
-	@make audit-typescript
-	@make audit-ocpp
+	@echo "📦 Node/npm:"
+	@node --version && npm --version
+
+info: ## Show project information
+	@echo "╔════════════════════════════════════════════════════════════════╗"
+	@echo "║           OCPP Charging Backend - Project Info                 ║"
+	@echo "╚════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "📂 Project Structure:"
+	@echo "  src/              - Source code (CLEAN Architecture)"
+	@echo "  test/             - Test files (unit + E2E)"
+	@echo "  scripts/          - Build and utility scripts"
+	@echo "  docker/           - Docker configuration"
+	@echo ""
+	@echo "🧪 Testing:"
+	@echo "  Unit tests:       make test"
+	@echo "  E2E tests:        make test-e2e"
+	@echo "  All tests:        make test-all"
+	@echo "  Coverage:         make test-cov"
+	@echo ""
+	@echo "🚀 Development:"
+	@echo "  Start dev:        make start-dev"
+	@echo "  Start debug:      make start-debug"
+	@echo "  Lint:             make lint"
+	@echo "  Format:           make format"
+	@echo ""
+	@echo "🐳 Docker:"
+	@echo "  Start services:   make docker-up"
+	@echo "  Stop services:    make docker-down"
+	@echo "  View logs:        make logs"
+	@echo ""
+	@echo "🗄️  Database:"
+	@echo "  Initialize:       make db-init"
+	@echo "  Reset (⚠️ ):      make db-reset"
+	@echo "  Shell:            make db-shell"
 	@echo ""
 
-# Clean old audit reports
-audit-clean:
-	@echo "$(YELLOW)🧹 Cleaning old audit reports...$(NC)"
-	@ls -t $(AUDIT_DIR)/AUDIT_*.md 2>/dev/null | tail -n +6 | xargs -r rm
-	@echo "$(GREEN)✅ Kept last 5 audit reports$(NC)"
+# ============================================================================
+# 🚀 QUICK START COMMANDS
+# ============================================================================
 
-# Compare two audit reports
-audit-compare:
-	@if [ -z "$$(ls -t $(AUDIT_DIR)/AUDIT_*.md 2>/dev/null | head -2)" ]; then \
-		echo "$(RED)❌ Not enough audit reports to compare$(NC)"; \
-		echo "   Run 'make audit-report' at least twice"; \
-		exit 1; \
-	fi
-	@echo "$(BLUE)📊 Comparing audit reports...$(NC)"
-	@FIRST=$$(ls -t $(AUDIT_DIR)/AUDIT_*.md | head -2 | tail -1); \
-	SECOND=$$(ls -t $(AUDIT_DIR)/AUDIT_*.md | head -1); \
-	echo "Comparing: $$FIRST → $$SECOND"; \
-	echo ""; \
-	diff $$FIRST $$SECOND || true
+setup: install env-setup db-init ## Complete project setup
+	@echo "✅ Project setup complete!"
+	@echo "Next steps:"
+	@echo "  1. Review .env file"
+	@echo "  2. Run 'make start-dev' to start development"
+	@echo "  3. Run 'make test-all' to run all tests"
 
-# Watch mode - continuous auditing
-audit-watch:
-	@echo "$(BLUE)👀 WATCH MODE - Continuous Auditing$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "Re-running audit on file changes..."
-	@which fswatch > /dev/null || { echo "$(RED)fswatch not installed$(NC)"; exit 1; }
-	@fswatch -r src/ | while read f; do \
-		clear; \
-		echo "$(YELLOW)File changed: $$f$(NC)"; \
-		make audit; \
-	done
+quick-test: docker-up test-e2e-init test-e2e ## Quick test run (requires Docker)
+	@echo "✅ Quick test complete!"
 
-# Generate comprehensive report
-audit-report:
-	@mkdir -p $(AUDIT_DIR)
-	@echo "$(BLUE)📊 Generating Comprehensive Audit Report...$(NC)"
-	@echo "# 🔬 OCPP Charging Backend - Comprehensive Audit Report" > $(AUDIT_REPORT)
-	@echo "" >> $(AUDIT_REPORT)
-	@echo "**Generated:** $$(date '+%Y-%m-%d %H:%M:%S')" >> $(AUDIT_REPORT)
-	@echo "**Branch:** $$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'N/A')" >> $(AUDIT_REPORT)
-	@echo "**Commit:** $$(git rev-parse --short HEAD 2>/dev/null || echo 'N/A')" >> $(AUDIT_REPORT)
-	@echo "" >> $(AUDIT_REPORT)
-	@echo "## 📊 Executive Summary" >> $(AUDIT_REPORT)
-	@echo "" >> $(AUDIT_REPORT)
-	@echo "### CLEAN Architecture" >> $(AUDIT_REPORT)
-	@echo "- ✅ Domain Independence: YES" >> $(AUDIT_REPORT)
-	@echo "- ✅ Dependency Rule: RESPECTED" >> $(AUDIT_REPORT)
-	@echo "- ✅ Testability: EXCELLENT" >> $(AUDIT_REPORT)
-	@echo "" >> $(AUDIT_REPORT)
-	@echo "### SOLID Principles" >> $(AUDIT_REPORT)
-	@echo "- ✅ SRP: 100/100" >> $(AUDIT_REPORT)
-	@echo "- ✅ OCP: 95/100" >> $(AUDIT_REPORT)
-	@echo "- ✅ LSP: 100/100" >> $(AUDIT_REPORT)
-	@echo "- ✅ ISP: 100/100" >> $(AUDIT_REPORT)
-	@echo "- ✅ DIP: 95/100" >> $(AUDIT_REPORT)
-	@echo "" >> $(AUDIT_REPORT)
-	@echo "### Test Coverage" >> $(AUDIT_REPORT)
-	@echo "\`\`\`" >> $(AUDIT_REPORT)
-	@npm test -- --coverage --watchAll=false 2>&1 | tail -35 >> $(AUDIT_REPORT)
-	@echo "\`\`\`" >> $(AUDIT_REPORT)
-	@echo "" >> $(AUDIT_REPORT)
-	@echo "---" >> $(AUDIT_REPORT)
-	@echo "✅ Report generated by Audit System" >> $(AUDIT_REPORT)
-	@echo ""
-	@echo "$(GREEN)✅ Audit report saved to: $(AUDIT_REPORT)$(NC)"
+quick-dev: docker-up start-dev ## Quick dev start (requires Docker)
+	@echo "✅ Development environment ready!"
 
-# ==============================================================================
-# 🎯 DEPLOYMENT AUDITS
-# ==============================================================================
+# ============================================================================
+# 📋 NOTES
+# ============================================================================
 
-# Pre-deployment Check
-pre-deploy:
-	@echo "$(BLUE)✅ PRE-DEPLOYMENT AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)🔍 Checks:$(NC)"
-	@npm run build >/dev/null 2>&1 && echo "  ✅ Build OK" || (echo "  ❌ Build FAILED"; exit 1)
-	@npm test -- --watchAll=false --coverage >/dev/null 2>&1 && echo "  ✅ Tests OK" || (echo "  ❌ Tests FAILED"; exit 1)
-	@npm run lint >/dev/null 2>&1 && echo "  ✅ Lint OK" || (echo "  ⚠️  Lint issues (non-blocking)")
-	@[ -f .env ] && echo "  ✅ .env configured" || (echo "  ❌ .env MISSING"; exit 1)
-	@[ -f docker-compose.yml ] && echo "  ✅ Docker configured" || echo "  ⚠️  Docker not configured"
-	@echo ""
-	@echo "$(GREEN)✅ Ready for deployment!$(NC)"
+# Notes for contributors:
+# - Use 'make help' to see all available commands
+# - All Docker commands require docker-compose installed
+# - Database commands require PostgreSQL running in Docker
+# - E2E tests require both databases (ocpp_db and ocpp_db_e2e)
+# - For CI/CD pipelines, use 'make install-ci' instead of 'make install'
+# - Use 'make clean-all' only when you need to reset everything
+# - E2E test database (ocpp_db_e2e) is auto-initialized via 'npm run test:e2e:init'
 
-# Staging Deployment
-deploy-staging:
-	@echo "$(YELLOW)🚀 Deploying to STAGING...$(NC)"
-	@make pre-deploy
-	@echo "$(YELLOW)📦 Building Docker image...$(NC)"
-	@docker-compose build
-	@echo "$(YELLOW)🐳 Starting services...$(NC)"
-	@docker-compose up -d
-	@echo "$(GREEN)✅ Staging deployment complete!$(NC)"
-	@echo "    API: http://localhost:3000"
-	@echo "    WebSocket: ws://localhost:3001"
-
-# Production Deployment
-deploy-prod:
-	@echo "$(RED)⚠️  PRODUCTION DEPLOYMENT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)⚠️  This will deploy to PRODUCTION!$(NC)"
-	@read -p "Are you sure? Type 'yes' to continue: " confirm; \
-	if [ "$$confirm" = "yes" ]; then \
-		echo "$(YELLOW)🔍 Running final checks...$(NC)"; \
-		make pre-deploy; \
-		echo "$(YELLOW)📦 Building optimized image...$(NC)"; \
-		docker-compose -f docker-compose.prod.yml build --no-cache; \
-		echo "$(YELLOW)🚀 Deploying...$(NC)"; \
-		docker-compose -f docker-compose.prod.yml up -d; \
-		echo "$(GREEN)✅ Production deployment complete!$(NC)"; \
-	else \
-		echo "$(YELLOW)Deployment cancelled.$(NC)"; \
-	fi
-
-# ==============================================================================
-# 📝 ADDITIONAL AUDITS
-# ==============================================================================
-
-# Docker Configuration Audit
-audit-docker:
-	@echo "$(BLUE)🐳 DOCKER CONFIGURATION AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📋 Files:$(NC)"
-	@[ -f Dockerfile ] && echo "  ✅ Dockerfile exists" || echo "  ❌ Dockerfile NOT FOUND"
-	@[ -f docker-compose.yml ] && echo "  ✅ docker-compose.yml exists" || echo "  ❌ docker-compose.yml NOT FOUND"
-	@[ -f .dockerignore ] && echo "  ✅ .dockerignore exists" || echo "  ❌ .dockerignore NOT FOUND"
-	@echo ""
-	@echo "$(GREEN)✅ Docker audit complete!$(NC)"
-
-# Environment Configuration Audit
-audit-env:
-	@echo "$(BLUE)🔐 ENVIRONMENT CONFIGURATION AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📋 Files:$(NC)"
-	@[ -f .env ] && echo "  ✅ .env exists" || echo "  ⚠️  .env NOT FOUND"
-	@[ -f .env.example ] && echo "  ✅ .env.example exists" || echo "  ⚠️  .env.example NOT FOUND"
-	@echo ""
-	@echo "$(YELLOW)🔍 Required variables:$(NC)"
-	@if [ -f .env ]; then \
-		grep -q "DATABASE_URL" .env && echo "  ✅ DATABASE_URL set" || echo "  ❌ DATABASE_URL MISSING"; \
-		grep -q "NODE_ENV" .env && echo "  ✅ NODE_ENV set" || echo "  ❌ NODE_ENV MISSING"; \
-	else \
-		echo "  ❌ .env file not found"; \
-	fi
-	@echo ""
-	@echo "$(GREEN)✅ Environment audit complete!$(NC)"
-
-# Git Status Audit
-audit-git:
-	@echo "$(BLUE)🔀 GIT STATUS AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📍 Current Branch:$(NC)"
-	@git rev-parse --abbrev-ref HEAD
-	@echo ""
-	@echo "$(YELLOW)📝 Latest Commits:$(NC)"
-	@git log --oneline -5
-	@echo ""
-	@echo "$(YELLOW)📊 Status:$(NC)"
-	@git status --short || echo "Working directory clean"
-	@echo ""
-	@echo "$(GREEN)✅ Git audit complete!$(NC)"
-
-# Integration Test Audit
-audit-integration:
-	@echo "$(BLUE)🔗 INTEGRATION TEST AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)🔍 Running integration tests...$(NC)"
-	@npm test -- --testPathPattern=".integration." --watchAll=false 2>&1 | tail -10 || echo "No integration tests found"
-	@echo ""
-	@echo "$(GREEN)✅ Integration audit complete!$(NC)"
-
-# Code Quality Audit
-audit-code-quality:
-	@echo "$(BLUE)🎯 CODE QUALITY AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)🔍 ESLint:$(NC)"
-	@npm run lint 2>&1 | tail -3 || echo "Lint check complete"
-	@echo ""
-	@echo "$(YELLOW)🎨 Prettier:$(NC)"
-	@npx prettier --check "src/**/*.ts" 2>&1 | tail -2 || echo "Format check complete"
-	@echo ""
-	@echo "$(GREEN)✅ Code quality audit complete!$(NC)"
-
-# Performance Audit
-audit-performance:
-	@echo "$(BLUE)⚡ PERFORMANCE AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📊 Build time:$(NC)"
-	@time npm run build >/dev/null 2>&1
-	@echo ""
-	@echo "$(YELLOW)📊 Test time:$(NC)"
-	@time npm test -- --watchAll=false >/dev/null 2>&1
-	@echo ""
-	@echo "$(GREEN)✅ Performance audit complete!$(NC)"
-
-# Migrations Audit
-audit-migrations:
-	@echo "$(BLUE)🗄️  MIGRATIONS AUDIT$(NC)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "$(YELLOW)📂 Migration Files:$(NC)"
-	@find src/infrastructure/database/migrations -name "*.ts" -type f | wc -l | xargs echo "Total:"
-	@find src/infrastructure/database/migrations -name "*.ts" -type f | sort
-	@echo ""
-	@echo "$(YELLOW)📋 Migration Status:$(NC)"
-	@npm run typeorm migration:show 2>&1 | tail -10
-	@echo ""
-	@echo "$(GREEN)✅ Migrations audit complete!$(NC)"
-
-.PHONY: install build test test-watch lint format audit-migrations audit-docker audit-env audit-integration audit-code-quality audit-git
