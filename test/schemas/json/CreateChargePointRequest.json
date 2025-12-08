@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "app:CreateChargePointRequest",
+  "title": "CreateChargePointRequest",
+  "description": "DTO for creating a new ChargePoint via REST API",
+  "type": "object",
+  "properties": {
+    "chargePointId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 25,
+      "description": "Unique identifier for the ChargePoint"
+    },
+    "chargePointVendor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20,
+      "description": "Vendor of the ChargePoint"
+    },
+    "chargePointModel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20,
+      "description": "Model of the ChargePoint"
+    },
+    "firmwareVersion": {
+      "type": "string",
+      "maxLength": 50,
+      "description": "Firmware version"
+    },
+    "iccid": {
+      "type": ["string", "null"],
+      "maxLength": 20,
+      "description": "ICCID of the SIM card (if applicable)"
+    },
+    "imsi": {
+      "type": ["string", "null"],
+      "maxLength": 20,
+      "description": "IMSI of the SIM card (if applicable)"
+    },
+    "webSocketUrl": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "WebSocket URL for OCPP communication"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "chargePointId",
+    "chargePointVendor",
+    "chargePointModel"
+  ]
+}
