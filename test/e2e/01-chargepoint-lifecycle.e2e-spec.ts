@@ -30,7 +30,7 @@ describe('ChargePoint Lifecycle E2E Tests', () => {
   it('should create a new ChargePoint', async () => {
     // ✅ CORRECT payload matching CreateChargePointInput DTO
     const createPayload = {
-      chargePointId: 'CP-TEST-001',
+      chargePointId: 'CP-LIFECYCLE-E2E-001',
       chargePointVendor: 'TestVendor',
       chargePointModel: 'TestModel-v1',
       firmwareVersion: '1.0.0',
@@ -45,7 +45,7 @@ describe('ChargePoint Lifecycle E2E Tests', () => {
       .expect(201);
 
     expect(response.body).toBeDefined();
-    expect(response.body.chargePointId).toBe('CP-TEST-001');
+    expect(response.body.chargePointId).toBe('CP-LIFECYCLE-E2E-001');
     expect(response.body.chargePointVendor).toBe('TestVendor');
     expect(response.body.chargePointModel).toBe('TestModel-v1');
   });
