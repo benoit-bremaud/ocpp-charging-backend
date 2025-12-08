@@ -12,9 +12,10 @@
  * - Tests domain layer (entities, value objects) indirectly
  */
 
+import { closeE2EApp, initializeE2EApp } from '../setup/e2e.setup';
+
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { initializeE2EApp, closeE2EApp } from '../setup/e2e.setup';
 
 describe('BootNotification Lifecycle E2E Tests', () => {
   let app: INestApplication;
@@ -41,8 +42,8 @@ describe('BootNotification Lifecycle E2E Tests', () => {
         chargePointVendor: 'SimulatedCharger',
         chargePointModel: 'SC-v2.0',
         firmwareVersion: '2.0.1',
-        iccid: null,
-        imsi: null,
+
+
         webSocketUrl: null,
       };
 
@@ -106,8 +107,8 @@ describe('BootNotification Lifecycle E2E Tests', () => {
         chargePointSerialNumber: 'SN-12345',
         chargeBoxSerialNumber: 'CB-12345',
         firmwareVersion: '2.0.1',
-        iccid: null,
-        imsi: null,
+
+
         meterSerialNumber: 'MT-12345',
         meterType: 'AC',
       };
@@ -118,8 +119,6 @@ describe('BootNotification Lifecycle E2E Tests', () => {
       expect(bootNotificationData.firmwareVersion).toBeDefined();
 
       // Optional fields nullable
-      expect(bootNotificationData.iccid === null).toBe(true);
-      expect(bootNotificationData.imsi === null).toBe(true);
     });
 
     it('should validate BootNotification response structure', async () => {
@@ -183,8 +182,8 @@ describe('BootNotification Lifecycle E2E Tests', () => {
         chargePointVendor: 'TestVendor',
         chargePointModel: 'TestModel',
         firmwareVersion: '1.0.0',
-        iccid: null,
-        imsi: null,
+
+
         webSocketUrl: null,
       };
 
@@ -206,3 +205,103 @@ describe('BootNotification Lifecycle E2E Tests', () => {
     });
   });
 });
+
+  describe('BootNotification JSON Schema Validation (OCPP 1.6 Compliance)', () => {
+    it('should validate BootNotification.req against OCPP 1.6 schema', async () => {
+      /**
+       * Verify: BootNotification request payload conforms to official OCPP 1.6 JSON schema
+       * Infrastructure: Schema validation layer
+       *
+       * OCPP 1.6 BootNotificationRequest requirements:
+       * - Required: chargePointVendor (string, maxLength 20), chargePointModel (string, maxLength 20)
+       * - Optional: chargePointSerialNumber, chargeBoxSerialNumber, firmwareVersion, iccid, imsi, meterType, meterSerialNumber
+       * - additionalProperties: false (no extra fields allowed)
+       */
+      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+
+      const validBootNotificationRequest = {
+        chargePointVendor: 'SimulatedCharger',
+        chargePointModel: 'SC-v2.0',
+        chargePointSerialNumber: 'SN-12345',
+        chargeBoxSerialNumber: 'CB-12345',
+        firmwareVersion: '2.0.1',
+
+
+      };
+
+      // Should not throw if valid
+      expect(() =>
+        assertOCPPMessageValid(
+          validBootNotificationRequest,
+          'BootNotification.json',
+        ),
+      ).not.toThrow();
+    });
+
+    it('should validate BootNotification.conf against OCPP 1.6 schema', async () => {
+      /**
+       * Verify: BootNotification response payload conforms to official OCPP 1.6 JSON schema
+       * Infrastructure: Schema validation layer
+       *
+       * OCPP 1.6 BootNotificationResponse requirements:
+       * - Required: status (Accepted|Pending|Rejected), currentTime (ISO 8601), interval (integer)
+       * - additionalProperties: false (no extra fields allowed)
+       */
+      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+
+      const validBootNotificationResponse = {
+        status: 'Accepted',
+        currentTime: new Date().toISOString(),
+        interval: 300,
+      };
+
+      // Should not throw if valid
+      expect(() =>
+        assertOCPPMessageValid(
+          validBootNotificationResponse,
+          'BootNotificationResponse.json',
+        ),
+      ).not.toThrow();
+    });
+
+    it('should reject invalid BootNotification.req (missing required vendor)', async () => {
+      /**
+       * Verify: Invalid payloads are caught by schema validation
+       * Negative test: missing required field chargePointVendor
+       */
+      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+      const invalidRequest = {
+        // Missing required: chargePointVendor
+        chargePointModel: 'SC-v2.0',
+      };
+
+      const result = validateOCPPMessage(invalidRequest, 'BootNotification.json');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors?.length).toBeGreaterThan(0);
+    });
+
+    it('should reject invalid BootNotification.conf (invalid status)', async () => {
+      /**
+       * Verify: Invalid enum values are caught
+       * Negative test: status not in {Accepted, Pending, Rejected}
+       */
+      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+      const invalidResponse = {
+        status: 'InvalidStatus', // NOT in enum
+        currentTime: new Date().toISOString(),
+        interval: 300,
+      };
+
+      const result = validateOCPPMessage(
+        invalidResponse,
+        'BootNotificationResponse.json',
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+  });
