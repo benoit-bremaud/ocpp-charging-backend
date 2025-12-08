@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { WinstonModule } from 'nest-winston';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './infrastructure/database/typeorm.config';
 import { ChargePoint } from './domain/entities/ChargePoint.entity';
+
+// Logger
+import { winstonConfig } from './infrastructure/logger/winston.config';
 
 // Infrastructure
 import { ChargePointRepository } from './infrastructure/repositories/ChargePointRepository';
@@ -34,6 +38,7 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
 
 @Module({
   imports: [
+    WinstonModule.forRoot(winstonConfig),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
