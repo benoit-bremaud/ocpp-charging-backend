@@ -1,47 +1,49 @@
-import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { WinstonModule } from 'nest-winston';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { getTypeOrmConfig } from './infrastructure/database/typeorm.config';
+import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 import { ChargePoint } from './domain/entities/ChargePoint.entity';
-
-// Logger
-import { winstonConfig } from './infrastructure/logger/winston.config';
-
-// Infrastructure - Health
-import { HealthService } from './infrastructure/health/health.service';
-
+// Presentation
+import { ChargePointController } from './presentation/controllers/ChargePointController';
+import { ChargePointGateway } from './infrastructure/websocket/ChargePointGateway';
 // Infrastructure - Repositories & WebSocket
 import { ChargePointRepository } from './infrastructure/repositories/ChargePointRepository';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
-import { ChargePointGateway } from './infrastructure/websocket/ChargePointGateway';
 import { ChargePointWebSocketService } from './infrastructure/websocket/ChargePointWebSocketService';
-
-// Application - CRUD
-import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
 import { CreateChargePoint } from './application/use-cases/CreateChargePoint';
-import { FindAllChargePoints } from './application/use-cases/FindAllChargePoints';
-import { UpdateChargePoint } from './application/use-cases/UpdateChargePoint';
 import { DeleteChargePoint } from './application/use-cases/DeleteChargePoint';
-
-// Application - OCPP Dispatcher
-import { ProcessOcppMessage } from './application/use-cases/ProcessOcppMessage';
-
+import { FindAllChargePoints } from './application/use-cases/FindAllChargePoints';
+import { HandleAuthorize } from './application/use-cases/HandleAuthorize';
 // Application - OCPP Handlers
 import { HandleBootNotification } from './application/use-cases/HandleBootNotification';
 import { HandleHeartbeat } from './application/use-cases/HandleHeartbeat';
 import { HandleStatusNotification } from './application/use-cases/HandleStatusNotification';
-import { HandleAuthorize } from './application/use-cases/HandleAuthorize';
-
-// Presentation
-import { ChargePointController } from './presentation/controllers/ChargePointController';
 import { HealthController } from './presentation/controllers/health.controller';
+// Infrastructure - Health
+import { HealthService } from './infrastructure/health/health.service';
+import { Module } from '@nestjs/common';
+// Application - OCPP Dispatcher
+import { ProcessOcppMessage } from './application/use-cases/ProcessOcppMessage';
+// Application - CRUD
+import { SelectChargePoint } from './application/use-cases/SelectChargePoint';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UpdateChargePoint } from './application/use-cases/UpdateChargePoint';
+import { WinstonModule } from 'nest-winston';
+import { getTypeOrmConfig } from './infrastructure/database/typeorm.config';
+// Logger
+import { winstonConfig } from './infrastructure/logger/winston.config';
 
 @Module({
   imports: [
+    // Throttling (Rate Limiting) - Global protection
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute (in milliseconds)
+        limit: 100, // Max 100 requests per minute per IP
+      },
+    ]),
     WinstonModule.forRoot(winstonConfig),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -57,6 +59,11 @@ import { HealthController } from './presentation/controllers/health.controller';
   providers: [
     AppService,
     HealthService,
+    // Global Throttling Guard (Rate Limiting)
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: CHARGE_POINT_REPOSITORY_TOKEN,
       useClass: ChargePointRepository,

@@ -3,7 +3,10 @@ import { HttpLoggingInterceptor } from './infrastructure/logger/http-logging.int
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import helmet from 'helmet';
+import { ValidationPipe } from '@nestjs/common';
 import { createSwaggerConfig } from './swagger.config';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,8 +14,21 @@ async function bootstrap() {
   // Use Winston as the main logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
+  // Security: Helmet middleware (protects HTTP headers)
+  app.use(helmet());
+
   // Global Interceptors
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
+
+  // Global Validation Pipe (Security Hardening)
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip properties not in DTO
+      forbidNonWhitelisted: true, // Throw error if extra properties present
+      transform: true, // Automatically transform payloads to DTO instances
+      disableErrorMessages: process.env.NODE_ENV === 'production', // Hide error details in prod
+    }),
+  );
 
   // Swagger Setup (Centralized Config)
   const swaggerConfig = createSwaggerConfig();
