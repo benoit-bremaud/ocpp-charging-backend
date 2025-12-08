@@ -12,9 +12,10 @@
  * - Tests domain layer (status validation, state machines)
  */
 
+import { closeE2EApp, initializeE2EApp } from '../setup/e2e.setup';
+
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { initializeE2EApp, closeE2EApp } from '../setup/e2e.setup';
 
 describe('StatusNotification Lifecycle E2E Tests', () => {
   let app: INestApplication;
@@ -300,3 +301,132 @@ describe('StatusNotification Lifecycle E2E Tests', () => {
     });
   });
 });
+
+  describe('StatusNotification JSON Schema Validation (OCPP 1.6 Compliance)', () => {
+    it('should validate StatusNotification.req against OCPP 1.6 schema', async () => {
+      /**
+       * Verify: StatusNotification request payload conforms to official OCPP 1.6 JSON schema
+       * Infrastructure: Schema validation layer
+       *
+       * OCPP 1.6 StatusNotificationRequest requirements:
+       * - Required: connectorId (integer), errorCode (enum), status (enum)
+       * - Optional: info, timestamp, vendorId, vendorErrorCode
+       * - additionalProperties: false
+       */
+      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+
+      const validStatusNotificationRequest = {
+        connectorId: 1,
+        status: 'Available',
+        errorCode: 'NoError',
+        timestamp: new Date().toISOString(),
+      };
+
+      // Should not throw if valid
+      expect(() =>
+        assertOCPPMessageValid(
+          validStatusNotificationRequest,
+          'StatusNotification.json',
+        ),
+      ).not.toThrow();
+    });
+
+    it('should validate StatusNotification.conf against OCPP 1.6 schema', async () => {
+      /**
+       * Verify: StatusNotification response payload conforms to official OCPP 1.6 JSON schema
+       * Infrastructure: Schema validation layer
+       *
+       * OCPP 1.6 StatusNotificationResponse:
+       * - Empty object, no properties allowed
+       * - additionalProperties: false
+       */
+      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+
+      const validStatusNotificationResponse = {};
+
+      // Should not throw if valid
+      expect(() =>
+        assertOCPPMessageValid(
+          validStatusNotificationResponse,
+          'StatusNotificationResponse.json',
+        ),
+      ).not.toThrow();
+    });
+
+    it('should reject invalid StatusNotification.req (invalid status)', async () => {
+      /**
+       * Verify: Invalid status enum value is caught
+       * Negative test: status must be in OCPP 1.6 enum
+       */
+      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+      const invalidRequest = {
+        connectorId: 1,
+        status: 'InvalidStatus', // NOT in enum
+        errorCode: 'NoError',
+      };
+
+      const result = validateOCPPMessage(invalidRequest, 'StatusNotification.json');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+
+    it('should reject invalid StatusNotification.req (invalid errorCode)', async () => {
+      /**
+       * Verify: Invalid errorCode enum value is caught
+       * Negative test: errorCode must be in OCPP 1.6 enum
+       */
+      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+      const invalidRequest = {
+        connectorId: 1,
+        status: 'Available',
+        errorCode: 'InvalidErrorCode', // NOT in enum
+      };
+
+      const result = validateOCPPMessage(invalidRequest, 'StatusNotification.json');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+
+    it('should reject invalid StatusNotification.req (missing required connectorId)', async () => {
+      /**
+       * Verify: Missing required field is caught
+       * Negative test: connectorId is required
+       */
+      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+      const invalidRequest = {
+        // Missing required: connectorId
+        status: 'Available',
+        errorCode: 'NoError',
+      };
+
+      const result = validateOCPPMessage(invalidRequest, 'StatusNotification.json');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+
+    it('should reject invalid StatusNotification.conf (with extra properties)', async () => {
+      /**
+       * Verify: Extra properties are rejected (empty object required)
+       * Negative test: StatusNotification.conf must be empty
+       */
+      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+      const invalidResponse = {
+        extraField: 'should not be here', // NOT allowed
+      };
+
+      const result = validateOCPPMessage(
+        invalidResponse,
+        'StatusNotificationResponse.json',
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+  });
