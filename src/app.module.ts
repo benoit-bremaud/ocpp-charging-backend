@@ -11,7 +11,10 @@ import { ChargePoint } from './domain/entities/ChargePoint.entity';
 // Logger
 import { winstonConfig } from './infrastructure/logger/winston.config';
 
-// Infrastructure
+// Infrastructure - Health
+import { HealthService } from './infrastructure/health/health.service';
+
+// Infrastructure - Repositories & WebSocket
 import { ChargePointRepository } from './infrastructure/repositories/ChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from './infrastructure/tokens';
 import { ChargePointGateway } from './infrastructure/websocket/ChargePointGateway';
@@ -35,6 +38,7 @@ import { HandleAuthorize } from './application/use-cases/HandleAuthorize';
 
 // Presentation
 import { ChargePointController } from './presentation/controllers/ChargePointController';
+import { HealthController } from './presentation/controllers/health.controller';
 
 @Module({
   imports: [
@@ -49,9 +53,10 @@ import { ChargePointController } from './presentation/controllers/ChargePointCon
     }),
     TypeOrmModule.forFeature([ChargePoint]),
   ],
-  controllers: [AppController, ChargePointController],
+  controllers: [AppController, ChargePointController, HealthController],
   providers: [
     AppService,
+    HealthService,
     {
       provide: CHARGE_POINT_REPOSITORY_TOKEN,
       useClass: ChargePointRepository,
