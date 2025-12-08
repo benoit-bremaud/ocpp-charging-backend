@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppModule } from '@app/app.module';
+import { AppModule } from '@/app.module';
 import { E2E_TEST_CONFIG, getE2EDataSourceConfig } from '../config/e2e-test.config';
 
 let cachedApp: INestApplication | null = null;
