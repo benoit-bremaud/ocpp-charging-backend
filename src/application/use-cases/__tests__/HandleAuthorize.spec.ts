@@ -1,4 +1,5 @@
 /**
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
  * HandleAuthorize Test Suite - CORRECTED
  * Only 4 tests needed fixes to match actual handler behavior
  */

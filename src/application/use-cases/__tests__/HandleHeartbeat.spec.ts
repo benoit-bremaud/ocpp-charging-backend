@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 
 import { HandleHeartbeat } from '../HandleHeartbeat';
 import { OcppCallRequest } from '../../dto/OcppProtocol';

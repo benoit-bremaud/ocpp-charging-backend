@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 
 import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
 import { HandleBootNotification } from '../HandleBootNotification';

@@ -1,4 +1,5 @@
 import { HandleDiagnosticsStatusNotification } from '../HandleDiagnosticsStatusNotification';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 import { DiagnosticsStatusNotificationInput } from '../../dto/input/DiagnosticsStatusNotificationInput';
 
 describe('HandleDiagnosticsStatusNotification', () => {

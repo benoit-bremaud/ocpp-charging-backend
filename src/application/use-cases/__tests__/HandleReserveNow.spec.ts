@@ -1,4 +1,5 @@
 import { HandleReserveNow } from '../HandleReserveNow';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 import { ReserveNowInput } from '../../dto/input/ReserveNowInput';
 
 describe('HandleReserveNow', () => {

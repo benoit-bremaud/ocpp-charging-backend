@@ -11,3 +11,11 @@ export { FirmwareStatusNotificationOutput } from './FirmwareStatusNotificationOu
 export { DiagnosticsStatusNotificationOutput } from './DiagnosticsStatusNotificationOutput';
 export { ReservationOutput } from './ReservationOutput';
 export { CancelReservationOutput } from './CancelReservationOutput';
+export { RemoteStartTransactionOutput } from './RemoteStartTransactionOutput';
+export { RemoteStopTransactionOutput } from './RemoteStopTransactionOutput';
+export { ResetOutput } from './ResetOutput';
+export { UnlockConnectorOutput } from './UnlockConnectorOutput';
+export { TriggerMessageOutput } from './TriggerMessageOutput';
+export { ChangeConfigurationOutput } from './ChangeConfigurationOutput';
+export { ChangeAvailabilityOutput } from './ChangeAvailabilityOutput';
+export { SetChargingProfileOutput } from './SetChargingProfileOutput';

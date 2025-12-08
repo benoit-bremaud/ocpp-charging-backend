@@ -1,4 +1,5 @@
 import { HandleFirmwareStatusNotification } from '../HandleFirmwareStatusNotification';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 import { FirmwareStatusNotificationInput } from '../../dto/input/FirmwareStatusNotificationInput';
 
 describe('HandleFirmwareStatusNotification', () => {

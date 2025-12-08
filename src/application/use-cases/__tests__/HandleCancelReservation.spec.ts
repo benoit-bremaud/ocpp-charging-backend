@@ -1,4 +1,5 @@
 import { HandleCancelReservation } from '../HandleCancelReservation';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 import { CancelReservationInput } from '../../dto/input/CancelReservationInput';
 
 describe('HandleCancelReservation', () => {
