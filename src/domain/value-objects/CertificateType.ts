@@ -1,6 +1,6 @@
 /**
  * CertificateType Value Object
- * 
+ *
  * Represents types of X.509 certificates used in OCPP.
  * Immutable, self-validating.
  */
@@ -9,7 +9,7 @@ export enum CertificateTypeEnum {
   ROOT_CERTIFICATE = 'ROOT_CERTIFICATE',
   INTERMEDIATE_CERTIFICATE = 'INTERMEDIATE_CERTIFICATE',
   LEAF_CERTIFICATE = 'LEAF_CERTIFICATE',
-  CRL = 'CRL',  // Certificate Revocation List
+  CRL = 'CRL', // Certificate Revocation List
 }
 
 export enum CertificatePurposeEnum {
@@ -24,22 +24,16 @@ export class CertificateType {
   private readonly purpose?: CertificatePurposeEnum;
 
   // Factory method
-  static create(
-    type: string,
-    purpose?: string
-  ): CertificateType {
+  static create(type: string, purpose?: string): CertificateType {
     CertificateType.validate(type, purpose);
     return new CertificateType(
       type as CertificateTypeEnum,
-      purpose as CertificatePurposeEnum | undefined
+      purpose as CertificatePurposeEnum | undefined,
     );
   }
 
   // Private constructor
-  private constructor(
-    type: CertificateTypeEnum,
-    purpose?: CertificatePurposeEnum
-  ) {
+  private constructor(type: CertificateTypeEnum, purpose?: CertificatePurposeEnum) {
     this.type = type;
     this.purpose = purpose;
   }
@@ -49,16 +43,14 @@ export class CertificateType {
     const validTypes = Object.values(CertificateTypeEnum);
     if (!validTypes.includes(type as CertificateTypeEnum)) {
       throw new Error(
-        `Invalid certificate type: ${type}. Must be one of: ${validTypes.join(', ')}`
+        `Invalid certificate type: ${type}. Must be one of: ${validTypes.join(', ')}`,
       );
     }
 
     if (purpose) {
       const validPurposes = Object.values(CertificatePurposeEnum);
       if (!validPurposes.includes(purpose as CertificatePurposeEnum)) {
-        throw new Error(
-          `Invalid certificate purpose: ${purpose}`
-        );
+        throw new Error(`Invalid certificate purpose: ${purpose}`);
       }
     }
   }

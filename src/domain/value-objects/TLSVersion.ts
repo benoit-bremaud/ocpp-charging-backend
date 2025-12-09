@@ -1,6 +1,6 @@
 /**
  * TLSVersion Value Object
- * 
+ *
  * Represents valid TLS versions for security profiles.
  * Immutable, self-validating.
  */
@@ -30,15 +30,13 @@ export class TLSVersion {
   private static validate(value: string): void {
     const validVersions = Object.values(TLSVersionEnum);
     if (!validVersions.includes(value as TLSVersionEnum)) {
-      throw new Error(
-        `Invalid TLS version: ${value}. Must be one of: ${validVersions.join(', ')}`
-      );
+      throw new Error(`Invalid TLS version: ${value}. Must be one of: ${validVersions.join(', ')}`);
     }
 
     // Business rule: TLS 1.0 and 1.1 are deprecated
     if (value === TLSVersionEnum.TLS_1_0 || value === TLSVersionEnum.TLS_1_1) {
       throw new Error(
-        `TLS ${value.replace('TLS_', '').replace('_', '.')} is deprecated. Use TLS 1.2 or higher.`
+        `TLS ${value.replace('TLS_', '').replace('_', '.')} is deprecated. Use TLS 1.2 or higher.`,
       );
     }
   }

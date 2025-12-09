@@ -1,6 +1,6 @@
 /**
  * CipherSuite Value Object
- * 
+ *
  * Represents valid cipher suites for TLS connections.
  * Immutable, self-validating.
  */
@@ -36,14 +36,12 @@ export class CipherSuite {
   private static validate(value: string): void {
     const validSuites = Object.values(CipherSuiteEnum);
     if (!validSuites.includes(value as CipherSuiteEnum)) {
-      throw new Error(
-        `Invalid cipher suite: ${value}. Must be one of the supported suites.`
-      );
+      throw new Error(`Invalid cipher suite: ${value}. Must be one of the supported suites.`);
     }
 
     // Business rule: Weak cipher suites not allowed
     const weakPatterns = ['DES', 'RC4', 'MD5', 'NULL'];
-    if (weakPatterns.some(pattern => value.includes(pattern))) {
+    if (weakPatterns.some((pattern) => value.includes(pattern))) {
       throw new Error(`Weak cipher suite not allowed: ${value}`);
     }
   }
@@ -54,8 +52,7 @@ export class CipherSuite {
   }
 
   isModern(): boolean {
-    return this.value.startsWith('TLS_AES_') || 
-           this.value.startsWith('TLS_CHACHA20_');
+    return this.value.startsWith('TLS_AES_') || this.value.startsWith('TLS_CHACHA20_');
   }
 
   // Equality
