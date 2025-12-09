@@ -215,7 +215,7 @@ describe('StartTransaction / StopTransaction Lifecycle E2E Tests', () => {
         // transactionData not provided
       };
 
-      expect((stopTransactionRequest as any).transactionData).toBeUndefined();
+      expect(stopTransactionRequest.transactionData).toBeUndefined();
     });
   });
 

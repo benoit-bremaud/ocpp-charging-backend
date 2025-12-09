@@ -1,4 +1,13 @@
-type ChargingProfile = { chargingProfileId: number; transactionId?: number; stackLevel: number; chargingProfilePurpose: string; chargingProfileKind: string; recurrencyKind?: string; validFrom?: string; validTo?: string; };
+type ChargingProfile = {
+  chargingProfileId: number;
+  transactionId?: number;
+  stackLevel: number;
+  chargingProfilePurpose: string;
+  chargingProfileKind: string;
+  recurrencyKind?: string;
+  validFrom?: string;
+  validTo?: string;
+};
 /**
  * RemoteStartTransaction Request DTO
  * OCPP § 3.15 - Initiate charging session remotely
@@ -33,7 +42,12 @@ export class RemoteStartTransactionInput {
     validTo?: string;
   };
 
-  constructor(chargePointId: string, idTag: string, connectorId?: number, chargingProfile?: ChargingProfile) {
+  constructor(
+    chargePointId: string,
+    idTag: string,
+    connectorId?: number,
+    chargingProfile?: ChargingProfile,
+  ) {
     this.chargePointId = chargePointId;
     this.idTag = idTag;
     this.connectorId = connectorId;

@@ -149,7 +149,7 @@ describe('MeterValues Lifecycle E2E Tests', () => {
         ],
       };
 
-      expect((meterValuesRequest as any).transactionId).toBeUndefined();
+      expect(meterValuesRequest.transactionId).toBeUndefined();
       expect(meterValuesRequest.meterValue).toHaveLength(1);
     });
 
@@ -181,7 +181,7 @@ describe('MeterValues Lifecycle E2E Tests', () => {
         // Missing required: value
       };
 
-      expect((invalidSampledValue as any).value).toBeUndefined();
+      expect(invalidSampledValue.value).toBeUndefined();
     });
 
     it('should handle SampledValue with context field', async () => {

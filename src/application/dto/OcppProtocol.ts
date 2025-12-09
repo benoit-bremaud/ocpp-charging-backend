@@ -67,7 +67,9 @@ export function serializeOcppMessage(msg: OcppMessage): unknown[] {
   }
   // Exhaustive check - this should never happen
   const exhaustiveCheck: never = msg;
-  throw new Error(`Invalid message type: ${(exhaustiveCheck as unknown as Record<string, unknown>).messageTypeId}`);
+  throw new Error(
+    `Invalid message type: ${(exhaustiveCheck as unknown as Record<string, unknown>).messageTypeId}`,
+  );
 }
 
 /**
@@ -115,7 +117,10 @@ export function deserializeOcppMessage(data: unknown): OcppMessage {
 /**
  * Helper: Create CALLRESULT response
  */
-export function createCallResult(messageId: string, payload: Record<string, unknown>): OcppCallResult {
+export function createCallResult(
+  messageId: string,
+  payload: Record<string, unknown>,
+): OcppCallResult {
   return {
     messageTypeId: 3,
     messageId,

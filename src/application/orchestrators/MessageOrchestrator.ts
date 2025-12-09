@@ -31,7 +31,7 @@ import { HandleSetChargingProfile } from '../use-cases/HandleSetChargingProfile'
  */
 @Injectable()
 export class MessageOrchestrator {
-  private handlers = new Map<string, any>();
+  private handlers = new Map<string, unknown>();
 
   constructor(
     private bootNotification: HandleBootNotification,
@@ -90,7 +90,9 @@ export class MessageOrchestrator {
    * Router central: dispatcher le message vers le bon handler
    */
   async route(chargePointId: string, action: string, input: unknown): Promise<unknown> {
-    const handler = this.handlers.get(action);
+    const handler = this.handlers.get(action) as
+      | { execute: (chargePointId: string, input: unknown) => Promise<unknown> }
+      | undefined;
 
     if (!handler) {
       throw new NotFoundException(`Handler not found for action: ${action}`);

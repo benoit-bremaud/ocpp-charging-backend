@@ -8,7 +8,6 @@
  * SOLID: SRP - validates schemas only.
  */
 
-
 export interface PropertySchema {
   type?: string;
   enum?: unknown[];

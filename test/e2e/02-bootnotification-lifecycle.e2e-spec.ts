@@ -1,3 +1,4 @@
+import { Server } from 'http';
 /**
  * E2E Test: BootNotification Lifecycle
  *
@@ -19,7 +20,7 @@ import request from 'supertest';
 
 describe('BootNotification Lifecycle E2E Tests', () => {
   let app: INestApplication;
-  let httpServer: any;
+  let httpServer: Server;
 
   beforeAll(async () => {
     app = await initializeE2EApp();

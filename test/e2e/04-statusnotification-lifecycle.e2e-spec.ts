@@ -1,3 +1,4 @@
+import { Server } from 'http';
 /**
  * E2E Test: StatusNotification Lifecycle
  *
@@ -19,7 +20,7 @@ import request from 'supertest';
 
 describe('StatusNotification Lifecycle E2E Tests', () => {
   let app: INestApplication;
-  let httpServer: any;
+  let httpServer: Server;
 
   beforeAll(async () => {
     app = await initializeE2EApp();
@@ -204,7 +205,7 @@ describe('StatusNotification Lifecycle E2E Tests', () => {
        * Verify: System can handle status updates without timestamp
        * Application: Defensive coding - use server time if client doesn't provide
        */
-      const statusWithoutTimestamp: any = {
+      const statusWithoutTimestamp: Record<string, unknown> = {
         connectorId: 1,
         status: 'Available',
         errorCode: 'NoError',

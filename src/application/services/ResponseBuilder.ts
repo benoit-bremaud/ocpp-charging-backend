@@ -45,7 +45,10 @@ export class ResponseBuilder {
   /**
    * Builder pour réponses avec status
    */
-  buildStatusResponse(messageId: string, status: string): [number, string, Record<string, unknown>] {
+  buildStatusResponse(
+    messageId: string,
+    status: string,
+  ): [number, string, Record<string, unknown>] {
     return this.buildCallResult(messageId, { status });
   }
 }

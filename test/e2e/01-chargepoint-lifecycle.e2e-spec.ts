@@ -1,3 +1,4 @@
+import { Server } from 'http';
 /**
  * E2E Test: ChargePoint Lifecycle
  */
@@ -9,7 +10,7 @@ import request from 'supertest';
 
 describe('ChargePoint Lifecycle E2E Tests', () => {
   let app: INestApplication;
-  let httpServer: any;
+  let httpServer: Server;
 
   beforeAll(async () => {
     app = await initializeE2EApp();

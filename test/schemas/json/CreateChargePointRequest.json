@@ -45,9 +45,5 @@
     }
   },
   "additionalProperties": false,
-  "required": [
-    "chargePointId",
-    "chargePointVendor",
-    "chargePointModel"
-  ]
+  "required": ["chargePointId", "chargePointVendor", "chargePointModel"]
 }

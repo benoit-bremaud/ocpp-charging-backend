@@ -27,9 +27,9 @@ const ajv = new Ajv({
 addFormats(ajv);
 
 // Lazy-load schemas from files
-const schemaCache = new Map<string, any>();
+const schemaCache = new Map<string, Record<string, unknown>>();
 
-function loadSchema(schemaFileName: string): any {
+function loadSchema(schemaFileName: string): Record<string, unknown> {
   if (schemaCache.has(schemaFileName)) {
     return schemaCache.get(schemaFileName);
   }
