@@ -28,7 +28,7 @@ export class HandleAuthorize {
    * @param context OCPP context (chargePointId, messageId, action)
    * @returns OCPP CALL_RESULT or CALL_ERROR response (array)
    */
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<any> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<unknown> {
     // Validate message type
     if (message.messageTypeId !== 2) {
       this.logger.error(
@@ -56,7 +56,7 @@ export class HandleAuthorize {
     const authorizationStatus = this.determineStatus(idTag);
 
     // Build response per OCPP 1.6 spec
-    const response: any = [
+    const response: unknown = [
       3,
       context.messageId,
       {

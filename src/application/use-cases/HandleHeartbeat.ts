@@ -24,7 +24,7 @@ export class HandleHeartbeat {
    * @param context Message metadata
    * @returns OCPP CALLRESULT or CALLERROR array
    */
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<unknown[]> {
     // OCPP 1.6: Must be CALL type (messageTypeId = 2)
     if (message.messageTypeId !== 2) {
       this.logger.error(

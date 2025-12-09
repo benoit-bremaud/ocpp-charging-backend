@@ -1,7 +1,4 @@
-import {
-  createCiString255Type,
-  isCiString255Type,
-} from '../CiString255Type';
+import { createCiString255Type, isCiString255Type } from '../CiString255Type';
 
 describe('CiString255Type', () => {
   describe('createCiString255Type()', () => {
@@ -17,9 +14,7 @@ describe('CiString255Type', () => {
 
     it('should reject string exceeding 255 characters', () => {
       const value = 'a'.repeat(256);
-      expect(() => createCiString255Type(value)).toThrow(
-        /maximum length is 255/
-      );
+      expect(() => createCiString255Type(value)).toThrow(/maximum length is 255/);
     });
 
     it('should reject empty string', () => {

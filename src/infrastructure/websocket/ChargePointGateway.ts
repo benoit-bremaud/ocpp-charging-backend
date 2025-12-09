@@ -74,7 +74,7 @@ export class ChargePointGateway implements OnGatewayConnection, OnGatewayDisconn
    * Format: [2, messageId, "Action", {payload}]
    */
   @SubscribeMessage('ocpp:message')
-  async handleOcppMessage(client: Socket, data: any[]): Promise<void> {
+  async handleOcppMessage(client: Socket, data: unknown[]): Promise<void> {
     const chargePointId = client.handshake.query.chargePointId as string;
     const sourceIp = client.handshake.address;
 
@@ -83,7 +83,7 @@ export class ChargePointGateway implements OnGatewayConnection, OnGatewayDisconn
       const messageId = data[1];
 
       // Create OCPP context
-      const context = new OcppContext(chargePointId, messageId, sourceIp);
+      const context = new OcppContext(chargePointId, messageId as string, sourceIp);
 
       // Route to dispatcher
       const response = await this.processOcppMessage.execute(data, context);
@@ -118,7 +118,7 @@ export class ChargePointGateway implements OnGatewayConnection, OnGatewayDisconn
     chargePointId: string,
     messageId: string,
     action: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ): boolean {
     const socket = this.connectedClients.get(chargePointId);
     if (!socket) {

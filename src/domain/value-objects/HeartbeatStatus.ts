@@ -9,7 +9,7 @@ export class HeartbeatStatus {
   readonly isValid: boolean;
   readonly reason?: string;
 
-  constructor(payload: Record<string, any>) {
+  constructor(payload: Record<string, unknown>) {
     // Per OCPP 1.6: Heartbeat payload MUST be empty
     const isEmpty = Object.keys(payload).length === 0;
 

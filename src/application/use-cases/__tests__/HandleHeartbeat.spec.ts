@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 
 import { HandleHeartbeat } from '../HandleHeartbeat';
 import { OcppCallRequest } from '../../dto/OcppProtocol';
@@ -82,9 +83,9 @@ describe('HandleHeartbeat', () => {
       payload: {},
     };
     const context = new OcppContext('CP-001', 'hb-preserve-id');
-    
+
     const result = await useCase.execute(message, context);
-    
+
     expect(result[1]).toBe('hb-preserve-id');
   });
 
@@ -105,7 +106,7 @@ describe('HandleHeartbeat', () => {
 
   it('should log successful heartbeat processing', async () => {
     const logSpy = jest.spyOn(useCase['logger'], 'log').mockImplementation();
-    
+
     const message: OcppCallRequest = {
       messageTypeId: 2,
       messageId: 'hb-logging',
@@ -113,9 +114,9 @@ describe('HandleHeartbeat', () => {
       payload: {},
     };
     const context = new OcppContext('CP-001', 'hb-logging');
-    
+
     await useCase.execute(message, context);
-    
+
     expect(logSpy).toHaveBeenCalled();
     logSpy.mockRestore();
   });
@@ -128,12 +129,11 @@ describe('HandleHeartbeat', () => {
       payload: {},
     };
     const context = new OcppContext('CP-001', 'hb-perf');
-    
+
     const start = performance.now();
     await useCase.execute(message, context);
     const duration = performance.now() - start;
-    
+
     expect(duration).toBeLessThan(50);
   });
-
 });

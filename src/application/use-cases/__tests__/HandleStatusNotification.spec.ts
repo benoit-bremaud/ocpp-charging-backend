@@ -353,9 +353,7 @@ describe('HandleStatusNotification - Comprehensive Test Suite (18 Tests)', () =>
 
       await useCase.execute(message, context);
 
-      expect(mockRepository.findByChargePointId).toHaveBeenCalledWith(
-        'CP-SPECIAL-123',
-      );
+      expect(mockRepository.findByChargePointId).toHaveBeenCalledWith('CP-SPECIAL-123');
       expect(mockRepository.findByChargePointId).toHaveBeenCalledTimes(1);
     });
 
@@ -373,9 +371,7 @@ describe('HandleStatusNotification - Comprehensive Test Suite (18 Tests)', () =>
       };
       const context = new OcppContext('CP-001', 'sn-repo-002');
 
-      mockRepository.findByChargePointId.mockRejectedValue(
-        new Error('Database connection failed'),
-      );
+      mockRepository.findByChargePointId.mockRejectedValue(new Error('Database connection failed'));
 
       const result = await useCase.execute(message, context).catch((err) => {
         return [4, 'sn-repo-002', 'InternalError', err.message];

@@ -1,8 +1,7 @@
-
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: ocpp-postgres
+    container_name: ocpp-postgres-dev
     environment:
       POSTGRES_USER: ocpp_user
       POSTGRES_PASSWORD: ocpp_password
@@ -19,9 +18,22 @@ services:
     networks:
       - ocpp-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: ocpp-redis-dev
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ocpp-network
+
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: ocpp-pgadmin
+    container_name: ocpp-pgadmin-dev
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -31,6 +43,42 @@ services:
       - postgres
     networks:
       - ocpp-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ocpp-backend-dev
+    environment:
+      NODE_ENV: development
+      API_HOST: localhost
+      API_PORT: 3001
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ocpp_user
+      DATABASE_PASSWORD: ocpp_password
+      DATABASE_NAME: ocpp_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3001:3001"
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run start:dev
+    networks:
+      - ocpp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

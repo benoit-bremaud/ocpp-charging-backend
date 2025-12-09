@@ -90,10 +90,10 @@ describe('MeterValue', () => {
       const meterValue: MeterValue = {
         timestamp: '2024-01-01T10:30:00Z',
         sampledValue: [
-          { 
+          {
             value: '1234.56',
-            measurand: Measurand.EnergyActiveImportRegister 
-          }
+            measurand: Measurand.EnergyActiveImportRegister,
+          },
         ],
       };
       expect(meterValue.sampledValue[0].value).toBe('1234.56');

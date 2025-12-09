@@ -31,7 +31,7 @@ describe('Domain › Enums › Auth › AuthorizationStatus', () => {
 
     it('should have all values as strings', () => {
       const values = Object.values(AuthorizationStatus);
-      expect(values.every(v => typeof v === 'string')).toBe(true);
+      expect(values.every((v) => typeof v === 'string')).toBe(true);
     });
   });
 });

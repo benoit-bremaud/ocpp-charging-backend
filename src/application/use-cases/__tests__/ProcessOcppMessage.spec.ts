@@ -1,9 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProcessOcppMessage } from '../ProcessOcppMessage';
+
+import { HandleAuthorize } from '../HandleAuthorize';
 import { HandleBootNotification } from '../HandleBootNotification';
 import { HandleHeartbeat } from '../HandleHeartbeat';
 import { HandleStatusNotification } from '../HandleStatusNotification';
-import { HandleAuthorize } from '../HandleAuthorize';
+import { ProcessOcppMessage } from '../ProcessOcppMessage';
+
+// ============================================
+// ✅ TYPE DEFINITIONS
+// ============================================
+
+type OcppResponse = [number, string, Record<string, unknown> | string];
+type OcppIgnoreResponse = { status: 'ignored' };
 
 describe('ProcessOcppMessage', () => {
   let service: ProcessOcppMessage;
@@ -12,12 +20,15 @@ describe('ProcessOcppMessage', () => {
     const mockHandlerBootNotification = {
       execute: jest.fn(),
     };
+
     const mockHandlerHeartbeat = {
       execute: jest.fn(),
     };
+
     const mockHandlerStatusNotification = {
       execute: jest.fn(),
     };
+
     const mockHandlerAuthorize = {
       execute: jest.fn(),
     };
@@ -87,7 +98,9 @@ describe('ProcessOcppMessage', () => {
     }).compile();
 
     const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
-    const result = await processService.execute(message, context as any);
+    const resultRaw = await processService.execute(message, context as any);
+    const result = resultRaw as OcppResponse;
+
     expect(result).toEqual(response);
   });
 
@@ -123,7 +136,9 @@ describe('ProcessOcppMessage', () => {
     }).compile();
 
     const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
-    const result = await processService.execute(message, context as any);
+    const resultRaw = await processService.execute(message, context as any);
+    const result = resultRaw as OcppResponse;
+
     expect(result).toEqual(response);
   });
 
@@ -159,7 +174,9 @@ describe('ProcessOcppMessage', () => {
     }).compile();
 
     const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
-    const result = await processService.execute(message, context as any);
+    const resultRaw = await processService.execute(message, context as any);
+    const result = resultRaw as OcppResponse;
+
     expect(result).toEqual(response);
   });
 
@@ -167,7 +184,10 @@ describe('ProcessOcppMessage', () => {
     const message = [2, 'unknown', 'UnknownAction', {}];
     const context = { chargePointId: 'CP001', messageId: 'unknown' };
 
-    const result = await service.execute(message, context as any);
+    const resultRaw = await service.execute(message, context as any);
+    const result = resultRaw as OcppResponse;
+
+    // ✅ NOW TYPED:
     expect(result[0]).toBe(4);
     expect(result[2]).toBe('NotImplemented');
   });
@@ -176,7 +196,10 @@ describe('ProcessOcppMessage', () => {
     const callResultMessage = [3, '123', {}];
     const context = { chargePointId: 'CP001', messageId: '123' };
 
-    const result = await service.execute(callResultMessage, context as any);
+    const resultRaw = await service.execute(callResultMessage, context as any);
+    const result = resultRaw as OcppIgnoreResponse;
+
+    // ✅ NOW TYPED:
     expect(result.status).toBe('ignored');
   });
 
@@ -197,8 +220,8 @@ describe('ProcessOcppMessage', () => {
         },
         {
           provide: HandleHeartbeat,
-          useValue: { 
-            execute: jest.fn().mockRejectedValue(new Error('Database connection failed'))
+          useValue: {
+            execute: jest.fn().mockRejectedValue(new Error('Database connection failed')),
           },
         },
         {
@@ -213,7 +236,10 @@ describe('ProcessOcppMessage', () => {
     }).compile();
 
     const processService = module.get<ProcessOcppMessage>(ProcessOcppMessage);
-    const result = await processService.execute(message, context as any);
+    const resultRaw = await processService.execute(message, context as any);
+    const result = resultRaw as OcppResponse;
+
+    // ✅ NOW TYPED:
     expect(result[0]).toBe(4);
     expect(result[2]).toBe('InternalError');
   });

@@ -1,7 +1,4 @@
-import {
-  createIdToken,
-  isIdToken,
-} from '../IdToken';
+import { createIdToken, isIdToken } from '../IdToken';
 
 describe('IdToken', () => {
   describe('createIdToken()', () => {
@@ -17,9 +14,7 @@ describe('IdToken', () => {
 
     it('should reject token exceeding 20 characters', () => {
       const token = 'a'.repeat(21);
-      expect(() => createIdToken(token)).toThrow(
-        /maximum length is 20/
-      );
+      expect(() => createIdToken(token)).toThrow(/maximum length is 20/);
     });
 
     it('should reject empty token', () => {

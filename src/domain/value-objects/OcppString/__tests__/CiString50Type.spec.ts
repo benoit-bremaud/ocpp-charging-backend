@@ -1,7 +1,4 @@
-import {
-  createCiString50Type,
-  isCiString50Type,
-} from '../CiString50Type';
+import { createCiString50Type, isCiString50Type } from '../CiString50Type';
 
 describe('CiString50Type', () => {
   describe('createCiString50Type()', () => {
@@ -17,9 +14,7 @@ describe('CiString50Type', () => {
 
     it('should reject string exceeding 50 characters', () => {
       const value = 'a'.repeat(51);
-      expect(() => createCiString50Type(value)).toThrow(
-        /maximum length is 50/
-      );
+      expect(() => createCiString50Type(value)).toThrow(/maximum length is 50/);
     });
 
     it('should reject empty string', () => {
