@@ -32,9 +32,7 @@ describe('HandleRemoteStartTransaction', () => {
     }).compile();
 
     handler = module.get<HandleRemoteStartTransaction>(HandleRemoteStartTransaction);
-    repository = module.get<jest.Mocked<IChargePointRepository>>(
-      CHARGE_POINT_REPOSITORY_TOKEN
-    );
+    repository = module.get<jest.Mocked<IChargePointRepository>>(CHARGE_POINT_REPOSITORY_TOKEN);
   });
 
   describe('execute', () => {

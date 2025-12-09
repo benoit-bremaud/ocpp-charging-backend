@@ -272,10 +272,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
         payload: { idTag: 'VALID_TAG' },
       };
 
-      const context = new OcppContext(
-        'CP-011',
-        '550e8400-e29b-41d4-a716-446655440000'
-      );
+      const context = new OcppContext('CP-011', '550e8400-e29b-41d4-a716-446655440000');
       const responseRaw = await handler.execute(message, context);
       const response = responseRaw as AuthorizeResponse;
 
@@ -285,9 +282,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
 
   describe('📊 Logging & Audit Trail', () => {
     it('should log authorization attempt', async () => {
-      const logSpy = jest
-        .spyOn(handler['logger'], 'log')
-        .mockImplementation(() => undefined);
+      const logSpy = jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
 
       const message: OcppCallRequest = {
         messageTypeId: 2,
@@ -305,9 +300,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
     });
 
     it('should log error on invalid idTag', async () => {
-      const errorSpy = jest
-        .spyOn(handler['logger'], 'error')
-        .mockImplementation(() => undefined);
+      const errorSpy = jest.spyOn(handler['logger'], 'error').mockImplementation(() => undefined);
 
       const message: OcppCallRequest = {
         messageTypeId: 2,
@@ -327,9 +320,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
     });
 
     it('should include relevant context in logs', async () => {
-      const logSpy = jest
-        .spyOn(handler['logger'], 'log')
-        .mockImplementation(() => undefined);
+      const logSpy = jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
 
       const message: OcppCallRequest = {
         messageTypeId: 2,

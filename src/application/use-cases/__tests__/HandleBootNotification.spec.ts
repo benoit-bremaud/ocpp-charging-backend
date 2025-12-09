@@ -8,7 +8,6 @@ import { OcppContext } from '../../../domain/value-objects/OcppContext';
 
 const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 
-
 type BootNotificationPayload = {
   currentTime: string;
   interval: number;
