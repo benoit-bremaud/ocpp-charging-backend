@@ -1,11 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
 
 import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
 import { HandleBootNotification } from '../HandleBootNotification';
 import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
 import { OcppCallRequest } from '../../dto/OcppProtocol';
 import { OcppContext } from '../../../domain/value-objects/OcppContext';
+
+const CHARGE_POINT_REPOSITORY_TOKEN = 'IChargePointRepository';
+
+
+type BootNotificationPayload = {
+  currentTime: string;
+  interval: number;
+  status: 'Accepted' | 'Pending' | 'Rejected';
+};
 
 describe('HandleBootNotification - Comprehensive Test Suite', () => {
   let useCase: HandleBootNotification;
@@ -116,10 +124,12 @@ describe('HandleBootNotification - Comprehensive Test Suite', () => {
     const context = new OcppContext('CP-003', 'boot-003');
     const result = await useCase.execute(message, context);
 
-    expect(result[2].currentTime).toBeDefined();
-    expect(typeof result[2].currentTime).toBe('string');
+    const payload = result[2] as BootNotificationPayload;
+
+    expect(payload.currentTime).toBeDefined();
+    expect(typeof payload.currentTime).toBe('string');
     // Verify ISO 8601 format
-    expect(result[2].currentTime).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    expect(payload.currentTime).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 
   it('should return default interval of 900 seconds', async () => {
@@ -141,7 +151,9 @@ describe('HandleBootNotification - Comprehensive Test Suite', () => {
     const context = new OcppContext('CP-004', 'boot-004');
     const result = await useCase.execute(message, context);
 
-    expect(result[2].interval).toBe(900);
+    const payload = result[2] as BootNotificationPayload;
+
+    expect(payload.interval).toBe(900);
   });
 
   it('should preserve messageId in response', async () => {
@@ -322,7 +334,9 @@ describe('HandleBootNotification - Comprehensive Test Suite', () => {
     const context = new OcppContext('CP-012', 'boot-012');
     const result = await useCase.execute(message, context);
 
-    expect(result[2].status).toMatch(/Accepted|Pending|Rejected/);
+    const payload = result[2] as BootNotificationPayload;
+
+    expect(payload.status).toMatch(/Accepted|Pending|Rejected/);
   });
 
   // ============ PERFORMANCE TESTS ============

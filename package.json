@@ -43,6 +43,7 @@
     "winston": "^3.11.0"
   },
   "devDependencies": {
+    "@commitlint/config-angular": "^20.2.0",
     "@nestjs/cli": "^10.3.2",
     "@nestjs/schematics": "^10.0.3",
     "@nestjs/testing": "^11.1.9",
@@ -54,6 +55,7 @@
     "@typescript-eslint/parser": "^7.18.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "commitlint": "^20.2.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
