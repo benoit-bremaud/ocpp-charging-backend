@@ -10,7 +10,7 @@
 
 export interface OcppSchemaDefinition {
   type: 'object';
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
   required: string[];
   additionalProperties: boolean;
 }
@@ -90,7 +90,7 @@ export class OcppSchema {
 
   static validate(
     action: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ): { valid: boolean; errors?: string[] } {
     const schema = this.SCHEMAS[action];
 

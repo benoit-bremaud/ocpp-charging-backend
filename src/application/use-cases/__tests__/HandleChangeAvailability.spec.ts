@@ -34,14 +34,22 @@ describe('HandleChangeAvailability', () => {
 
   describe('execute', () => {
     it('should accept operative type', async () => {
-      const input: ChangeAvailabilityInput = { chargePointId: 'CP-001', connectorId: 1, type: 'Operative' };
+      const input: ChangeAvailabilityInput = {
+        chargePointId: 'CP-001',
+        connectorId: 1,
+        type: 'Operative',
+      };
       repository.find.mockResolvedValue({ id: 'CP-001' } as any);
       const result = await handler.execute(input);
       expect(result.status).toMatch(/Accepted|Scheduled/);
     });
 
     it('should accept inoperative type', async () => {
-      const input: ChangeAvailabilityInput = { chargePointId: 'CP-001', connectorId: 1, type: 'Inoperative' };
+      const input: ChangeAvailabilityInput = {
+        chargePointId: 'CP-001',
+        connectorId: 1,
+        type: 'Inoperative',
+      };
       repository.find.mockResolvedValue({ id: 'CP-001' } as any);
       const result = await handler.execute(input);
       expect(result.status).toMatch(/Accepted|Scheduled/);
@@ -55,7 +63,11 @@ describe('HandleChangeAvailability', () => {
     });
 
     it('should reject if charge point not found', async () => {
-      const input: ChangeAvailabilityInput = { chargePointId: 'CP-NONEXISTENT', connectorId: 1, type: 'Operative' };
+      const input: ChangeAvailabilityInput = {
+        chargePointId: 'CP-NONEXISTENT',
+        connectorId: 1,
+        type: 'Operative',
+      };
       repository.find.mockResolvedValue(null);
       const result = await handler.execute(input);
       expect(result.status).toBe('Rejected');
@@ -64,7 +76,11 @@ describe('HandleChangeAvailability', () => {
     it('should accept for any connector ID', async () => {
       repository.find.mockResolvedValue({ id: 'CP-001' } as any);
       for (let i = 0; i <= 3; i++) {
-        const result = await handler.execute({ chargePointId: 'CP-001', connectorId: i, type: 'Operative' });
+        const result = await handler.execute({
+          chargePointId: 'CP-001',
+          connectorId: i,
+          type: 'Operative',
+        });
         expect(result.status).toMatch(/Accepted|Scheduled/);
       }
     });

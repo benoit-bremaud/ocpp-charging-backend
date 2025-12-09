@@ -19,14 +19,14 @@ import { HandleSetChargingProfile } from '../use-cases/HandleSetChargingProfile'
 /**
  * Strategy Pattern: Router central pour messages OCPP
  * Dispatcher qui mappe actions → handlers
- * 
+ *
  * SOLID: S (routing responsibility), O (extensible handler registry)
- * 
+ *
  * Phase Coverage:
  *   - Phase 3: BootNotification, Authorize, Heartbeat
  *   - Phase 4: StatusNotification, FirmwareStatusNotification, DiagnosticsStatusNotification
  *   - Phase 5: ReserveNow, CancelReservation
- *   - Phase 6: RemoteStartTransaction, RemoteStopTransaction, Reset, UnlockConnector, 
+ *   - Phase 6: RemoteStartTransaction, RemoteStopTransaction, Reset, UnlockConnector,
  *             TriggerMessage, ChangeConfiguration, ChangeAvailability, SetChargingProfile
  */
 @Injectable()
@@ -56,7 +56,7 @@ export class MessageOrchestrator {
 
   /**
    * Initialiser la registry des handlers
-   * 
+   *
    * Phase 3-5: Core + Notifications + Reservations
    * Phase 6: Remote Control Commands
    */
@@ -89,7 +89,7 @@ export class MessageOrchestrator {
   /**
    * Router central: dispatcher le message vers le bon handler
    */
-  async route(chargePointId: string, action: string, input: any): Promise<any> {
+  async route(chargePointId: string, action: string, input: unknown): Promise<unknown> {
     const handler = this.handlers.get(action);
 
     if (!handler) {
@@ -125,7 +125,16 @@ export class MessageOrchestrator {
       3: ['BootNotification', 'Authorize', 'Heartbeat'],
       4: ['StatusNotification', 'FirmwareStatusNotification', 'DiagnosticsStatusNotification'],
       5: ['ReserveNow', 'CancelReservation'],
-      6: ['RemoteStartTransaction', 'RemoteStopTransaction', 'Reset', 'UnlockConnector', 'TriggerMessage', 'ChangeConfiguration', 'ChangeAvailability', 'SetChargingProfile'],
+      6: [
+        'RemoteStartTransaction',
+        'RemoteStopTransaction',
+        'Reset',
+        'UnlockConnector',
+        'TriggerMessage',
+        'ChangeConfiguration',
+        'ChangeAvailability',
+        'SetChargingProfile',
+      ],
     };
     return phaseMap[phase] || [];
   }

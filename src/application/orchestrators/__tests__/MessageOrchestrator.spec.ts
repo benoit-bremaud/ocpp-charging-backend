@@ -3,7 +3,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('MessageOrchestrator', () => {
   let orchestrator: MessageOrchestrator;
-  
+
   const mockHandlers = {
     bootNotification: { execute: jest.fn().mockResolvedValue({ status: 'Accepted' }) },
     authorize: { execute: jest.fn().mockResolvedValue({ idTagInfo: { status: 'Accepted' } }) },
@@ -50,12 +50,12 @@ describe('MessageOrchestrator', () => {
         chargeBoxSerialNumber: 'SN123',
         chargePointModel: 'Model X',
         chargePointVendor: 'Vendor Y',
-        firmwareVersion: '1.0.0'
+        firmwareVersion: '1.0.0',
       });
 
       expect(mockHandlers.bootNotification.execute).toHaveBeenCalledWith(
         'cp-001',
-        expect.objectContaining({ chargePointModel: 'Model X' })
+        expect.objectContaining({ chargePointModel: 'Model X' }),
       );
       expect(result).toEqual({ status: 'Accepted' });
     });
@@ -75,16 +75,24 @@ describe('MessageOrchestrator', () => {
     });
 
     it('should route Phase 6 RemoteStartTransaction to correct handler', async () => {
-      const result = await orchestrator.route('cp-001', 'RemoteStartTransaction', { idTag: 'tag-123' });
+      const result = await orchestrator.route('cp-001', 'RemoteStartTransaction', {
+        idTag: 'tag-123',
+      });
 
-      expect(mockHandlers.remoteStartTransaction.execute).toHaveBeenCalledWith('cp-001', { idTag: 'tag-123' });
+      expect(mockHandlers.remoteStartTransaction.execute).toHaveBeenCalledWith('cp-001', {
+        idTag: 'tag-123',
+      });
       expect(result.status).toBe('Accepted');
     });
 
     it('should route Phase 6 RemoteStopTransaction to correct handler', async () => {
-      const result = await orchestrator.route('cp-001', 'RemoteStopTransaction', { transactionId: 1 });
+      const result = await orchestrator.route('cp-001', 'RemoteStopTransaction', {
+        transactionId: 1,
+      });
 
-      expect(mockHandlers.remoteStopTransaction.execute).toHaveBeenCalledWith('cp-001', { transactionId: 1 });
+      expect(mockHandlers.remoteStopTransaction.execute).toHaveBeenCalledWith('cp-001', {
+        transactionId: 1,
+      });
       expect(result.status).toBe('Accepted');
     });
 
@@ -98,42 +106,66 @@ describe('MessageOrchestrator', () => {
     it('should route Phase 6 UnlockConnector to correct handler', async () => {
       const result = await orchestrator.route('cp-001', 'UnlockConnector', { connectorId: 1 });
 
-      expect(mockHandlers.unlockConnector.execute).toHaveBeenCalledWith('cp-001', { connectorId: 1 });
+      expect(mockHandlers.unlockConnector.execute).toHaveBeenCalledWith('cp-001', {
+        connectorId: 1,
+      });
       expect(result.status).toBe('Accepted');
     });
 
     it('should route Phase 6 TriggerMessage to correct handler', async () => {
-      const result = await orchestrator.route('cp-001', 'TriggerMessage', { requestedMessage: 'Heartbeat' });
+      const result = await orchestrator.route('cp-001', 'TriggerMessage', {
+        requestedMessage: 'Heartbeat',
+      });
 
-      expect(mockHandlers.triggerMessage.execute).toHaveBeenCalledWith('cp-001', { requestedMessage: 'Heartbeat' });
+      expect(mockHandlers.triggerMessage.execute).toHaveBeenCalledWith('cp-001', {
+        requestedMessage: 'Heartbeat',
+      });
       expect(result.status).toBe('Accepted');
     });
 
     it('should route Phase 6 ChangeConfiguration to correct handler', async () => {
-      const result = await orchestrator.route('cp-001', 'ChangeConfiguration', { key: 'HeartbeatInterval', value: '60' });
+      const result = await orchestrator.route('cp-001', 'ChangeConfiguration', {
+        key: 'HeartbeatInterval',
+        value: '60',
+      });
 
-      expect(mockHandlers.changeConfiguration.execute).toHaveBeenCalledWith('cp-001', expect.objectContaining({ key: 'HeartbeatInterval' }));
+      expect(mockHandlers.changeConfiguration.execute).toHaveBeenCalledWith(
+        'cp-001',
+        expect.objectContaining({ key: 'HeartbeatInterval' }),
+      );
       expect(result.status).toBe('Accepted');
     });
 
     it('should route Phase 6 ChangeAvailability to correct handler', async () => {
-      const result = await orchestrator.route('cp-001', 'ChangeAvailability', { connectorId: 1, type: 'Operative' });
+      const result = await orchestrator.route('cp-001', 'ChangeAvailability', {
+        connectorId: 1,
+        type: 'Operative',
+      });
 
-      expect(mockHandlers.changeAvailability.execute).toHaveBeenCalledWith('cp-001', expect.objectContaining({ type: 'Operative' }));
+      expect(mockHandlers.changeAvailability.execute).toHaveBeenCalledWith(
+        'cp-001',
+        expect.objectContaining({ type: 'Operative' }),
+      );
       expect(result.status).toBe('Accepted');
     });
 
     it('should route Phase 6 SetChargingProfile to correct handler', async () => {
-      const result = await orchestrator.route('cp-001', 'SetChargingProfile', { connectorId: 1, chargingProfile: {} });
+      const result = await orchestrator.route('cp-001', 'SetChargingProfile', {
+        connectorId: 1,
+        chargingProfile: {},
+      });
 
-      expect(mockHandlers.setChargingProfile.execute).toHaveBeenCalledWith('cp-001', expect.objectContaining({ connectorId: 1 }));
+      expect(mockHandlers.setChargingProfile.execute).toHaveBeenCalledWith(
+        'cp-001',
+        expect.objectContaining({ connectorId: 1 }),
+      );
       expect(result.status).toBe('Accepted');
     });
 
     it('should throw NotFoundException for unknown action', async () => {
-      await expect(
-        orchestrator.route('cp-001', 'UnknownAction', {})
-      ).rejects.toThrow(NotFoundException);
+      await expect(orchestrator.route('cp-001', 'UnknownAction', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException if handler has no execute method', async () => {
@@ -156,9 +188,9 @@ describe('MessageOrchestrator', () => {
         mockHandlers.setChargingProfile as any,
       );
 
-      await expect(
-        badOrchestrator.route('cp-001', 'BootNotification', {})
-      ).rejects.toThrow(BadRequestException);
+      await expect(badOrchestrator.route('cp-001', 'BootNotification', {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -170,16 +202,16 @@ describe('MessageOrchestrator', () => {
       expect(actions).toContain('BootNotification');
       expect(actions).toContain('Authorize');
       expect(actions).toContain('Heartbeat');
-      
+
       // Phase 4
       expect(actions).toContain('StatusNotification');
       expect(actions).toContain('FirmwareStatusNotification');
       expect(actions).toContain('DiagnosticsStatusNotification');
-      
+
       // Phase 5
       expect(actions).toContain('ReserveNow');
       expect(actions).toContain('CancelReservation');
-      
+
       // Phase 6
       expect(actions).toContain('RemoteStartTransaction');
       expect(actions).toContain('RemoteStopTransaction');
@@ -189,7 +221,7 @@ describe('MessageOrchestrator', () => {
       expect(actions).toContain('ChangeConfiguration');
       expect(actions).toContain('ChangeAvailability');
       expect(actions).toContain('SetChargingProfile');
-      
+
       expect(actions).toHaveLength(16);
     });
   });

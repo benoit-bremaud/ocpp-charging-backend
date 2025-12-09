@@ -60,6 +60,6 @@ describe('HandleUnlockConnector', () => {
         const result = await handler.execute({ chargePointId: 'CP-001', connectorId: i });
         expect(result.status).toBe('Accepted');
       }
-    })
+    });
   });
 });

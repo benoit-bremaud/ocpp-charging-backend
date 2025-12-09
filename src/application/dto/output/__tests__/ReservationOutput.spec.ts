@@ -1,6 +1,6 @@
 /**
  * ReservationOutput Unit Tests
- * 
+ *
  * Tests unitaires pour le DTO de sortie ReservationOutput
  * Valide la structure et les statuts de réservation
  */
@@ -74,7 +74,7 @@ describe('ReservationOutput', () => {
 
       expect(output).toEqual({
         status: 'Accepted',
-        reservationId: 12345
+        reservationId: 12345,
       });
     });
 

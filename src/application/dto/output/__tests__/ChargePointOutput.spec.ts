@@ -1,6 +1,6 @@
 /**
  * ChargePointOutput Unit Tests
- * 
+ *
  * Tests unitaires pour le DTO de sortie ChargePointOutput
  * Valide la structure, les types et les propriétés optionnelles
  */

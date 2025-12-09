@@ -18,11 +18,7 @@ export class TriggerMessageInput {
    */
   readonly connectorId?: number;
 
-  constructor(
-    chargePointId: string,
-    requestedMessage: string,
-    connectorId?: number,
-  ) {
+  constructor(chargePointId: string, requestedMessage: string, connectorId?: number) {
     this.chargePointId = chargePointId;
     this.requestedMessage = requestedMessage;
     this.connectorId = connectorId;

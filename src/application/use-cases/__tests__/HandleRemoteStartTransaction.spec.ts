@@ -31,9 +31,7 @@ describe('HandleRemoteStartTransaction', () => {
       ],
     }).compile();
 
-    handler = module.get<HandleRemoteStartTransaction>(
-      HandleRemoteStartTransaction,
-    );
+    handler = module.get<HandleRemoteStartTransaction>(HandleRemoteStartTransaction);
     repository = module.get<jest.Mocked<IChargePointRepository>>(CHARGE_POINT_REPOSITORY_TOKEN);
   });
 
@@ -44,11 +42,7 @@ describe('HandleRemoteStartTransaction', () => {
       chargePoint.chargePointId = 'CP-001';
       repository.find.mockResolvedValue(chargePoint);
 
-      const input = new RemoteStartTransactionInput(
-        'CP-001',
-        'VEHICLE-123',
-        1,
-      );
+      const input = new RemoteStartTransactionInput('CP-001', 'VEHICLE-123', 1);
       const result = await handler.execute(input);
 
       expect(result.status).toBe('Accepted');
@@ -75,10 +69,7 @@ describe('HandleRemoteStartTransaction', () => {
     it('should reject if charge point not found', async () => {
       repository.find.mockResolvedValue(null);
 
-      const input = new RemoteStartTransactionInput(
-        'CP-NOT-FOUND',
-        'VEHICLE-123',
-      );
+      const input = new RemoteStartTransactionInput('CP-NOT-FOUND', 'VEHICLE-123');
       const result = await handler.execute(input);
 
       expect(result.status).toBe('Rejected');
@@ -89,11 +80,7 @@ describe('HandleRemoteStartTransaction', () => {
       chargePoint.id = 'cp-001';
       repository.find.mockResolvedValue(chargePoint);
 
-      const input = new RemoteStartTransactionInput(
-        'CP-001',
-        'VEHICLE-123',
-        -1,
-      );
+      const input = new RemoteStartTransactionInput('CP-001', 'VEHICLE-123', -1);
       const result = await handler.execute(input);
 
       expect(result.status).toBe('Rejected');
@@ -104,23 +91,16 @@ describe('HandleRemoteStartTransaction', () => {
       chargePoint.id = 'cp-001';
       repository.find.mockResolvedValue(chargePoint);
 
-      const input = new RemoteStartTransactionInput(
-        'CP-001',
-        'VEHICLE-123',
-        1,
-        {
-          chargingProfileId: 1,
-          stackLevel: 0,
-          chargingProfilePurpose: 'TxProfile',
-          chargingProfileKind: 'Relative',
-          chargingSchedule: {
-            chargingRateUnit: 'A',
-            chargingSchedulePeriod: [
-              { startPeriod: 0, limit: 10 },
-            ],
-          },
+      const input = new RemoteStartTransactionInput('CP-001', 'VEHICLE-123', 1, {
+        chargingProfileId: 1,
+        stackLevel: 0,
+        chargingProfilePurpose: 'TxProfile',
+        chargingProfileKind: 'Relative',
+        chargingSchedule: {
+          chargingRateUnit: 'A',
+          chargingSchedulePeriod: [{ startPeriod: 0, limit: 10 }],
         },
-      );
+      });
       const result = await handler.execute(input);
 
       expect(result.status).toBe('Accepted');

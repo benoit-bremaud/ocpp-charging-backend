@@ -18,11 +18,7 @@ export class ChangeAvailabilityInput {
    */
   readonly type: 'Operative' | 'Inoperative';
 
-  constructor(
-    chargePointId: string,
-    connectorId: number,
-    type: 'Operative' | 'Inoperative',
-  ) {
+  constructor(chargePointId: string, connectorId: number, type: 'Operative' | 'Inoperative') {
     this.chargePointId = chargePointId;
     this.connectorId = connectorId;
     this.type = type;

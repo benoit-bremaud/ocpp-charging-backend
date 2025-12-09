@@ -46,9 +46,7 @@ describe('Heartbeat Lifecycle E2E Tests', () => {
         webSocketUrl: null,
       };
 
-      const response = await request(httpServer)
-        .post('/charge-points')
-        .send(createPayload);
+      const response = await request(httpServer).post('/charge-points').send(createPayload);
 
       expect([201, 500]).toContain(response.status);
 
@@ -63,14 +61,12 @@ describe('Heartbeat Lifecycle E2E Tests', () => {
        * Verify: ChargePoint is stored in database
        * Domain: Repository pattern validates persistence
        */
-      const response = await request(httpServer)
-        .get('/charge-points')
-        .expect(200);
+      const response = await request(httpServer).get('/charge-points').expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
 
       const savedChargePoint = response.body.find(
-        (cp: any) => cp.chargePointId === 'CP-HEART-E2E-004',
+        (cp: unknown) => cp.chargePointId === 'CP-HEART-E2E-004',
       );
 
       expect(savedChargePoint).toBeDefined();
@@ -231,78 +227,76 @@ describe('Heartbeat Lifecycle E2E Tests', () => {
   });
 });
 
-  describe('Heartbeat JSON Schema Validation (OCPP 1.6 Compliance)', () => {
-    it('should validate Heartbeat.req against OCPP 1.6 schema', async () => {
-      /**
-       * Verify: Heartbeat request payload conforms to official OCPP 1.6 JSON schema
-       * Infrastructure: Schema validation layer
-       *
-       * OCPP 1.6 HeartbeatRequest:
-       * - Empty object, no properties allowed
-       * - additionalProperties: false
-       */
-      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+describe('Heartbeat JSON Schema Validation (OCPP 1.6 Compliance)', () => {
+  it('should validate Heartbeat.req against OCPP 1.6 schema', async () => {
+    /**
+     * Verify: Heartbeat request payload conforms to official OCPP 1.6 JSON schema
+     * Infrastructure: Schema validation layer
+     *
+     * OCPP 1.6 HeartbeatRequest:
+     * - Empty object, no properties allowed
+     * - additionalProperties: false
+     */
+    const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
 
-      const validHeartbeatRequest = {};
+    const validHeartbeatRequest = {};
 
-      // Should not throw if valid
-      expect(() =>
-        assertOCPPMessageValid(validHeartbeatRequest, 'Heartbeat.json'),
-      ).not.toThrow();
-    });
-
-    it('should validate Heartbeat.conf against OCPP 1.6 schema', async () => {
-      /**
-       * Verify: Heartbeat response payload conforms to official OCPP 1.6 JSON schema
-       * Infrastructure: Schema validation layer
-       *
-       * OCPP 1.6 HeartbeatResponse:
-       * - Required: currentTime (ISO 8601 format date-time)
-       * - additionalProperties: false
-       */
-      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
-
-      const validHeartbeatResponse = {
-        currentTime: new Date().toISOString(),
-      };
-
-      // Should not throw if valid
-      expect(() =>
-        assertOCPPMessageValid(validHeartbeatResponse, 'HeartbeatResponse.json'),
-      ).not.toThrow();
-    });
-
-    it('should reject invalid Heartbeat.req (with extra properties)', async () => {
-      /**
-       * Verify: Invalid payloads with extra properties are caught
-       * Negative test: Heartbeat must be empty object
-       */
-      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
-
-      const invalidRequest = {
-        extraField: 'should not be here', // NOT allowed
-      };
-
-      const result = validateOCPPMessage(invalidRequest, 'Heartbeat.json');
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toBeDefined();
-    });
-
-    it('should reject invalid Heartbeat.conf (missing currentTime)', async () => {
-      /**
-       * Verify: Missing required fields are caught
-       * Negative test: currentTime is required
-       */
-      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
-
-      const invalidResponse = {
-        // Missing required: currentTime
-      };
-
-      const result = validateOCPPMessage(invalidResponse, 'HeartbeatResponse.json');
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toBeDefined();
-    });
+    // Should not throw if valid
+    expect(() => assertOCPPMessageValid(validHeartbeatRequest, 'Heartbeat.json')).not.toThrow();
   });
+
+  it('should validate Heartbeat.conf against OCPP 1.6 schema', async () => {
+    /**
+     * Verify: Heartbeat response payload conforms to official OCPP 1.6 JSON schema
+     * Infrastructure: Schema validation layer
+     *
+     * OCPP 1.6 HeartbeatResponse:
+     * - Required: currentTime (ISO 8601 format date-time)
+     * - additionalProperties: false
+     */
+    const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+
+    const validHeartbeatResponse = {
+      currentTime: new Date().toISOString(),
+    };
+
+    // Should not throw if valid
+    expect(() =>
+      assertOCPPMessageValid(validHeartbeatResponse, 'HeartbeatResponse.json'),
+    ).not.toThrow();
+  });
+
+  it('should reject invalid Heartbeat.req (with extra properties)', async () => {
+    /**
+     * Verify: Invalid payloads with extra properties are caught
+     * Negative test: Heartbeat must be empty object
+     */
+    const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+    const invalidRequest = {
+      extraField: 'should not be here', // NOT allowed
+    };
+
+    const result = validateOCPPMessage(invalidRequest, 'Heartbeat.json');
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toBeDefined();
+  });
+
+  it('should reject invalid Heartbeat.conf (missing currentTime)', async () => {
+    /**
+     * Verify: Missing required fields are caught
+     * Negative test: currentTime is required
+     */
+    const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+    const invalidResponse = {
+      // Missing required: currentTime
+    };
+
+    const result = validateOCPPMessage(invalidResponse, 'HeartbeatResponse.json');
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toBeDefined();
+  });
+});

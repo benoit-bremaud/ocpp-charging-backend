@@ -38,7 +38,7 @@ export class SetChargingProfileInput {
     };
   };
 
-  constructor(chargePointId: string, connectorId: number, chargingProfile: any) {
+  constructor(chargePointId: string, connectorId: number, chargingProfile: unknown) {
     this.chargePointId = chargePointId;
     this.connectorId = connectorId;
     this.chargingProfile = chargingProfile;

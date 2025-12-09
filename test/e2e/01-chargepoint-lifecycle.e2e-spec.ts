@@ -21,9 +21,7 @@ describe('ChargePoint Lifecycle E2E Tests', () => {
   });
 
   it('should return 200 OK on health endpoint', async () => {
-    const response = await request(httpServer)
-      .get('/health')
-      .expect(200);
+    const response = await request(httpServer).get('/health').expect(200);
 
     expect(response.body).toBeDefined();
   });
@@ -52,109 +50,99 @@ describe('ChargePoint Lifecycle E2E Tests', () => {
   });
 
   it('should retrieve all ChargePoints', async () => {
-    const response = await request(httpServer)
-      .get('/charge-points')
-      .expect(200);
+    const response = await request(httpServer).get('/charge-points').expect(200);
 
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThan(0);
   });
 });
 
-  describe('ChargePoint DTO Schema Validation (REST API Compliance)', () => {
-    it('should validate CreateChargePointRequest DTO', async () => {
-      /**
-       * Verify: CreateChargePoint request DTO conforms to internal schema
-       * Infrastructure: DTO validation layer
-       *
-       * CreateChargePointRequest:
-       * - Required: chargePointId, chargePointVendor, chargePointModel
-       * - Optional: firmwareVersion, iccid, imsi, webSocketUrl
-       * - additionalProperties: false
-       */
-      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+describe('ChargePoint DTO Schema Validation (REST API Compliance)', () => {
+  it('should validate CreateChargePointRequest DTO', async () => {
+    /**
+     * Verify: CreateChargePoint request DTO conforms to internal schema
+     * Infrastructure: DTO validation layer
+     *
+     * CreateChargePointRequest:
+     * - Required: chargePointId, chargePointVendor, chargePointModel
+     * - Optional: firmwareVersion, iccid, imsi, webSocketUrl
+     * - additionalProperties: false
+     */
+    const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
 
-      const validCreateRequest = {
-        chargePointId: 'CP-CRUD-E2E-001',
-        chargePointVendor: 'TestVendor',
-        chargePointModel: 'TestModel',
-        firmwareVersion: '1.0.0',
-        iccid: null,
-        imsi: null,
-        webSocketUrl: null,
-      };
+    const validCreateRequest = {
+      chargePointId: 'CP-CRUD-E2E-001',
+      chargePointVendor: 'TestVendor',
+      chargePointModel: 'TestModel',
+      firmwareVersion: '1.0.0',
+      iccid: null,
+      imsi: null,
+      webSocketUrl: null,
+    };
 
-      expect(() =>
-        assertOCPPMessageValid(
-          validCreateRequest,
-          'CreateChargePointRequest.json',
-        ),
-      ).not.toThrow();
-    });
-
-    it('should validate ChargePointResponse DTO', async () => {
-      /**
-       * Verify: ChargePoint response DTO conforms to internal schema
-       * Infrastructure: DTO validation layer
-       *
-       * ChargePointResponse:
-       * - Required: id, chargePointId, chargePointVendor, chargePointModel, status, heartbeatInterval, createdAt, updatedAt
-       * - Status: one of OCPP statuses or OFFLINE (internal)
-       * - additionalProperties: false
-       */
-      const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
-
-      const validResponse = {
-        id: 1,
-        chargePointId: 'CP-CRUD-E2E-001',
-        chargePointVendor: 'TestVendor',
-        chargePointModel: 'TestModel',
-        firmwareVersion: '1.0.0',
-        status: 'OFFLINE',
-        heartbeatInterval: 300,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      expect(() =>
-        assertOCPPMessageValid(validResponse, 'ChargePointResponse.json'),
-      ).not.toThrow();
-    });
-
-    it('should reject invalid CreateChargePointRequest (missing chargePointId)', async () => {
-      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
-
-      const invalidRequest = {
-        chargePointVendor: 'TestVendor',
-        chargePointModel: 'TestModel',
-      };
-
-      const result = validateOCPPMessage(
-        invalidRequest,
-        'CreateChargePointRequest.json',
-      );
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toBeDefined();
-    });
-
-    it('should reject invalid ChargePointResponse (invalid status)', async () => {
-      const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
-
-      const invalidResponse = {
-        id: 1,
-        chargePointId: 'CP-TEST',
-        chargePointVendor: 'TestVendor',
-        chargePointModel: 'TestModel',
-        status: 'InvalidStatus',
-        heartbeatInterval: 300,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const result = validateOCPPMessage(invalidResponse, 'ChargePointResponse.json');
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toBeDefined();
-    });
+    expect(() =>
+      assertOCPPMessageValid(validCreateRequest, 'CreateChargePointRequest.json'),
+    ).not.toThrow();
   });
+
+  it('should validate ChargePointResponse DTO', async () => {
+    /**
+     * Verify: ChargePoint response DTO conforms to internal schema
+     * Infrastructure: DTO validation layer
+     *
+     * ChargePointResponse:
+     * - Required: id, chargePointId, chargePointVendor, chargePointModel, status, heartbeatInterval, createdAt, updatedAt
+     * - Status: one of OCPP statuses or OFFLINE (internal)
+     * - additionalProperties: false
+     */
+    const { assertOCPPMessageValid } = await import('./validators/ocpp-schema-validator');
+
+    const validResponse = {
+      id: 1,
+      chargePointId: 'CP-CRUD-E2E-001',
+      chargePointVendor: 'TestVendor',
+      chargePointModel: 'TestModel',
+      firmwareVersion: '1.0.0',
+      status: 'OFFLINE',
+      heartbeatInterval: 300,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    expect(() => assertOCPPMessageValid(validResponse, 'ChargePointResponse.json')).not.toThrow();
+  });
+
+  it('should reject invalid CreateChargePointRequest (missing chargePointId)', async () => {
+    const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+    const invalidRequest = {
+      chargePointVendor: 'TestVendor',
+      chargePointModel: 'TestModel',
+    };
+
+    const result = validateOCPPMessage(invalidRequest, 'CreateChargePointRequest.json');
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toBeDefined();
+  });
+
+  it('should reject invalid ChargePointResponse (invalid status)', async () => {
+    const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
+
+    const invalidResponse = {
+      id: 1,
+      chargePointId: 'CP-TEST',
+      chargePointVendor: 'TestVendor',
+      chargePointModel: 'TestModel',
+      status: 'InvalidStatus',
+      heartbeatInterval: 300,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = validateOCPPMessage(invalidResponse, 'ChargePointResponse.json');
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toBeDefined();
+  });
+});

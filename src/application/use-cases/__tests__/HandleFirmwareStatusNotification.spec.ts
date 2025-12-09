@@ -12,7 +12,7 @@ describe('HandleFirmwareStatusNotification', () => {
   describe('execute', () => {
     it('should return empty response', async () => {
       const input: FirmwareStatusNotificationInput = {
-        status: 'Downloaded'
+        status: 'Downloaded',
       };
 
       const result = await useCase.execute('cp-001', input);
@@ -21,14 +21,9 @@ describe('HandleFirmwareStatusNotification', () => {
     });
 
     it('should handle different firmware statuses', async () => {
-      const statuses: Array<'Downloaded' | 'Downloading' | 'Idle' | 'InstallationFailed' | 'Installing' | 'Installed'> = [
-        'Downloaded',
-        'Downloading',
-        'Idle',
-        'InstallationFailed',
-        'Installing',
-        'Installed'
-      ];
+      const statuses: Array<
+        'Downloaded' | 'Downloading' | 'Idle' | 'InstallationFailed' | 'Installing' | 'Installed'
+      > = ['Downloaded', 'Downloading', 'Idle', 'InstallationFailed', 'Installing', 'Installed'];
 
       for (const status of statuses) {
         const input: FirmwareStatusNotificationInput = { status };

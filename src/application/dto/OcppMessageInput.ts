@@ -9,7 +9,7 @@ export interface OcppMessageInput {
   messageTypeId: number;
   messageId: string;
   action: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }
 
 /**

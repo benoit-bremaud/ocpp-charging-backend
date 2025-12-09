@@ -8,14 +8,14 @@ export class OcppMessage {
   readonly messageTypeId: number; // [2] = CALL, [3] = CALLRESULT, [4] = CALLERROR
   readonly messageId: string;
   readonly action: string; // e.g., "BootNotification", "Heartbeat"
-  readonly payload: Record<string, any>;
+  readonly payload: Record<string, unknown>;
   readonly timestamp: Date;
 
   constructor(
     messageTypeId: number,
     messageId: string,
     action: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ) {
     this.validate(messageTypeId, messageId, action);
 

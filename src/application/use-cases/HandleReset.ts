@@ -12,7 +12,7 @@ import { IChargePointRepository } from '../../domain/repositories/IChargePointRe
 export class HandleReset {
   constructor(
     @Inject(CHARGE_POINT_REPOSITORY_TOKEN)
-    private readonly chargePointRepo: IChargePointRepository
+    private readonly chargePointRepo: IChargePointRepository,
   ) {}
 
   async execute(input: ResetInput): Promise<ResetOutput> {

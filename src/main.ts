@@ -7,7 +7,6 @@ import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { createSwaggerConfig } from './swagger.config';
 
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 

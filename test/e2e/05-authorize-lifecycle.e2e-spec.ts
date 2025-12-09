@@ -130,9 +130,7 @@ describe('Authorize Lifecycle E2E Tests', () => {
         idTag: 'VALID-IDTAG-12345',
       };
 
-      expect(() =>
-        assertOCPPMessageValid(validAuthorizeRequest, 'Authorize.json'),
-      ).not.toThrow();
+      expect(() => assertOCPPMessageValid(validAuthorizeRequest, 'Authorize.json')).not.toThrow();
     });
 
     it('should validate Authorize.conf against OCPP 1.6 schema', async () => {
@@ -155,10 +153,7 @@ describe('Authorize Lifecycle E2E Tests', () => {
       };
 
       expect(() =>
-        assertOCPPMessageValid(
-          validAuthorizeResponse,
-          'AuthorizeResponse.json',
-        ),
+        assertOCPPMessageValid(validAuthorizeResponse, 'AuthorizeResponse.json'),
       ).not.toThrow();
     });
 
@@ -184,10 +179,7 @@ describe('Authorize Lifecycle E2E Tests', () => {
         },
       };
 
-      const result = validateOCPPMessage(
-        invalidResponse,
-        'AuthorizeResponse.json',
-      );
+      const result = validateOCPPMessage(invalidResponse, 'AuthorizeResponse.json');
 
       expect(result.valid).toBe(false);
       expect(result.errors).toBeDefined();

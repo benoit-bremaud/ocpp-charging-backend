@@ -9,12 +9,12 @@ import { FirmwareStatusNotificationOutput } from '../dto/output/FirmwareStatusNo
 export class HandleFirmwareStatusNotification {
   async execute(
     chargePointId: string,
-    input: FirmwareStatusNotificationInput
+    input: FirmwareStatusNotificationInput,
   ): Promise<FirmwareStatusNotificationOutput> {
     // Log la notification et retourner une réponse vide (OK pour OCPP)
     console.log(`FirmwareStatusNotification received for ${chargePointId}: ${input.status}`);
     return {
-      status: input.status
+      status: input.status,
     };
   }
 }

@@ -23,15 +23,21 @@ describe('OcppMessageValidator', () => {
     });
 
     it('should reject invalid messageTypeId', () => {
-      expect(() => validator.validateOcppMessage([5, 'msg-id', 'Authorize'])).toThrow(BadRequestException);
+      expect(() => validator.validateOcppMessage([5, 'msg-id', 'Authorize'])).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject empty messageId', () => {
-      expect(() => validator.validateOcppMessage([2, '', 'Authorize'])).toThrow(BadRequestException);
+      expect(() => validator.validateOcppMessage([2, '', 'Authorize'])).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject non-string messageId', () => {
-      expect(() => validator.validateOcppMessage([2, 123, 'Authorize'])).toThrow(BadRequestException);
+      expect(() => validator.validateOcppMessage([2, 123, 'Authorize'])).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject empty action', () => {

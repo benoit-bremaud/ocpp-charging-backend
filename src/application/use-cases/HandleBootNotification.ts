@@ -22,7 +22,7 @@ export class HandleBootNotification {
     private readonly chargePointRepository: IChargePointRepository,
   ) {}
 
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<unknown[]> {
     if (message.messageTypeId !== 2) {
       this.logger.error('BootNotification expects CALL (messageTypeId 2)');
       return buildGenericError(context.messageId, 'Expected CALL message type');

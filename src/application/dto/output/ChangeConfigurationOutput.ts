@@ -12,9 +12,7 @@ export class ChangeConfigurationOutput {
    */
   readonly status: 'Accepted' | 'Rejected' | 'RebootRequired' | 'NotSupported';
 
-  constructor(
-    status: 'Accepted' | 'Rejected' | 'RebootRequired' | 'NotSupported',
-  ) {
+  constructor(status: 'Accepted' | 'Rejected' | 'RebootRequired' | 'NotSupported') {
     this.status = status;
   }
 

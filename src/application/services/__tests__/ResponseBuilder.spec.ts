@@ -27,7 +27,7 @@ describe('ResponseBuilder', () => {
       const payload = {
         status: 'Accepted',
         transactionId: 123,
-        details: { nested: true }
+        details: { nested: true },
       };
 
       const result = builder.buildCallResult('msg-3', payload);
@@ -48,9 +48,15 @@ describe('ResponseBuilder', () => {
     });
 
     it('should handle all error codes', () => {
-      const codes = ['NotImplemented', 'NotSupported', 'InternalError', 'ProtocolError', 'SecurityError'] as const;
+      const codes = [
+        'NotImplemented',
+        'NotSupported',
+        'InternalError',
+        'ProtocolError',
+        'SecurityError',
+      ] as const;
 
-      codes.forEach(code => {
+      codes.forEach((code) => {
         const result = builder.buildCallError('msg-' + code, code, 'Error message');
         expect(result[2]).toBe(code);
       });
@@ -75,7 +81,7 @@ describe('ResponseBuilder', () => {
     it('should handle various status values', () => {
       const statuses = ['Accepted', 'Rejected', 'Pending', 'InProgress'];
 
-      statuses.forEach(status => {
+      statuses.forEach((status) => {
         const result = builder.buildStatusResponse('msg-' + status, status);
         expect(result[2].status).toBe(status);
       });

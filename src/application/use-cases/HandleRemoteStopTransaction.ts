@@ -20,7 +20,7 @@ import { RemoteStopTransactionOutput } from '../dto/output/RemoteStopTransaction
 export class HandleRemoteStopTransaction {
   constructor(
     @Inject(CHARGE_POINT_REPOSITORY_TOKEN)
-    private readonly chargePointRepo: IChargePointRepository
+    private readonly chargePointRepo: IChargePointRepository,
   ) {}
 
   /**

@@ -115,7 +115,19 @@ describe('StartTransaction / StopTransaction Lifecycle E2E Tests', () => {
       expect(stopTransactionRequest.transactionId).toBeGreaterThan(0);
       expect(stopTransactionRequest.idTag).toBeDefined();
       expect(stopTransactionRequest.meterStop).toBeGreaterThan(0);
-      expect(['DeAuthorized', 'EmergencyStop', 'EVDisconnected', 'HardReset', 'Local', 'Other', 'PowerLoss', 'Reboot', 'RemoteStop', 'SoftReset', 'UnlockCommand']).toContain(stopTransactionRequest.reason);
+      expect([
+        'DeAuthorized',
+        'EmergencyStop',
+        'EVDisconnected',
+        'HardReset',
+        'Local',
+        'Other',
+        'PowerLoss',
+        'Reboot',
+        'RemoteStop',
+        'SoftReset',
+        'UnlockCommand',
+      ]).toContain(stopTransactionRequest.reason);
     });
 
     it('should build a valid StopTransaction response payload', async () => {
@@ -223,10 +235,7 @@ describe('StartTransaction / StopTransaction Lifecycle E2E Tests', () => {
       };
 
       expect(() =>
-        assertOCPPMessageValid(
-          validStartTransactionRequest,
-          'StartTransaction.json',
-        ),
+        assertOCPPMessageValid(validStartTransactionRequest, 'StartTransaction.json'),
       ).not.toThrow();
     });
 
@@ -245,13 +254,9 @@ describe('StartTransaction / StopTransaction Lifecycle E2E Tests', () => {
       };
 
       expect(() =>
-        assertOCPPMessageValid(
-          validStartTransactionResponse,
-          'StartTransactionResponse.json',
-        ),
+        assertOCPPMessageValid(validStartTransactionResponse, 'StartTransactionResponse.json'),
       ).not.toThrow();
     });
-
 
     it('should reject invalid StartTransaction.req (missing idTag)', async () => {
       const { validateOCPPMessage } = await import('./validators/ocpp-schema-validator');
@@ -286,10 +291,7 @@ describe('StartTransaction / StopTransaction Lifecycle E2E Tests', () => {
       };
 
       expect(() =>
-        assertOCPPMessageValid(
-          validStopTransactionRequest,
-          'StopTransaction.json',
-        ),
+        assertOCPPMessageValid(validStopTransactionRequest, 'StopTransaction.json'),
       ).not.toThrow();
     });
 
@@ -307,10 +309,7 @@ describe('StartTransaction / StopTransaction Lifecycle E2E Tests', () => {
       };
 
       expect(() =>
-        assertOCPPMessageValid(
-          validStopTransactionResponse,
-          'StopTransactionResponse.json',
-        ),
+        assertOCPPMessageValid(validStopTransactionResponse, 'StopTransactionResponse.json'),
       ).not.toThrow();
     });
 

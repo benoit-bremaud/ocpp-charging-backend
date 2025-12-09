@@ -38,7 +38,7 @@ export class ChargePointWebSocketService {
     chargePointId: string,
     messageId: string,
     action: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ): boolean {
     this.logger.debug(`Sending ${action} to ${chargePointId}`);
     return this.chargePointGateway.sendCommandToChargePoint(

@@ -1,6 +1,6 @@
 /**
  * FirmwareStatusNotificationOutput Unit Tests
- * 
+ *
  * Tests unitaires pour le DTO de sortie FirmwareStatusNotificationOutput
  * Valide tous les statuts de firmware possibles
  */

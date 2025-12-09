@@ -106,7 +106,11 @@ describe('MeterValues Lifecycle E2E Tests', () => {
       };
 
       expect(meterValuesRequest.meterValue[0].sampledValue).toHaveLength(3);
-      expect(meterValuesRequest.meterValue[0].sampledValue.every((sv) => sv.measurand === 'Current.Import')).toBe(true);
+      expect(
+        meterValuesRequest.meterValue[0].sampledValue.every(
+          (sv) => sv.measurand === 'Current.Import',
+        ),
+      ).toBe(true);
     });
 
     it('should build a valid MeterValues request with temperature reading', async () => {
@@ -203,7 +207,21 @@ describe('MeterValues Lifecycle E2E Tests', () => {
 
     it('should detect invalid unit values', async () => {
       const invalidUnit = 'InvalidUnit';
-      const validUnits = ['Wh', 'kWh', 'varh', 'kvarh', 'W', 'kW', 'var', 'kvar', 'A', 'V', 'K', 'Celsius', 'Kelvin'];
+      const validUnits = [
+        'Wh',
+        'kWh',
+        'varh',
+        'kvarh',
+        'W',
+        'kW',
+        'var',
+        'kvar',
+        'A',
+        'V',
+        'K',
+        'Celsius',
+        'Kelvin',
+      ];
 
       expect(validUnits).not.toContain(invalidUnit);
     });
@@ -250,10 +268,7 @@ describe('MeterValues Lifecycle E2E Tests', () => {
       const validMeterValuesResponse = {};
 
       expect(() =>
-        assertOCPPMessageValid(
-          validMeterValuesResponse,
-          'MeterValuesResponse.json',
-        ),
+        assertOCPPMessageValid(validMeterValuesResponse, 'MeterValuesResponse.json'),
       ).not.toThrow();
     });
 

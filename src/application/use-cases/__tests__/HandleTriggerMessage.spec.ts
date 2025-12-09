@@ -48,14 +48,21 @@ describe('HandleTriggerMessage', () => {
     });
 
     it('should reject if charge point not found', async () => {
-      const input: TriggerMessageInput = { chargePointId: 'CP-NONEXISTENT', requestedMessage: 'Heartbeat' };
+      const input: TriggerMessageInput = {
+        chargePointId: 'CP-NONEXISTENT',
+        requestedMessage: 'Heartbeat',
+      };
       repository.find.mockResolvedValue(null);
       const result = await handler.execute(input);
       expect(result.status).toBe('Rejected');
     });
 
     it('should accept with optional connectorId', async () => {
-      const input: TriggerMessageInput = { chargePointId: 'CP-001', requestedMessage: 'Heartbeat', connectorId: 1 };
+      const input: TriggerMessageInput = {
+        chargePointId: 'CP-001',
+        requestedMessage: 'Heartbeat',
+        connectorId: 1,
+      };
       repository.find.mockResolvedValue({ id: 'CP-001' } as any);
       const result = await handler.execute(input);
       expect(result.status).toBe('Accepted');

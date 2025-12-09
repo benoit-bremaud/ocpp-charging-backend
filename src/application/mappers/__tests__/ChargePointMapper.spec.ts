@@ -15,7 +15,7 @@ describe('ChargePointMapper', () => {
         chargePointId: 'CP-001',
         chargePointModel: 'Model X',
         chargePointVendor: 'Vendor Y',
-        firmwareVersion: '1.0.0'
+        firmwareVersion: '1.0.0',
       };
 
       const entity = mapper.toDomain(input);

@@ -51,12 +51,7 @@ export const E2E_TEST_CONFIG = {
   cleanup: {
     dropSchemaAfterSuite: false,
     cleanEntitiesBetweenTests: true,
-    entitiesToClean: [
-      'ChargePoint',
-      'Connector',
-      'Transaction',
-      'Configuration',
-    ],
+    entitiesToClean: ['ChargePoint', 'Connector', 'Transaction', 'Configuration'],
   },
 };
 

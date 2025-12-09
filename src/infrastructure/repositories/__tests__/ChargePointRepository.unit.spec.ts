@@ -19,7 +19,7 @@ describe('ChargePointRepository (Unit)', () => {
       create: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -27,9 +27,9 @@ describe('ChargePointRepository (Unit)', () => {
         ChargePointRepository,
         {
           provide: getRepositoryToken(ChargePoint),
-          useValue: mockTypeormRepository
-        }
-      ]
+          useValue: mockTypeormRepository,
+        },
+      ],
     }).compile();
 
     repository = module.get<ChargePointRepository>(ChargePointRepository);
@@ -42,7 +42,7 @@ describe('ChargePointRepository (Unit)', () => {
         chargePointId: 'CP-001',
         chargePointModel: 'Model X',
         chargePointVendor: 'Vendor Y',
-        firmwareVersion: '1.0.0'
+        firmwareVersion: '1.0.0',
       };
 
       const saved = new ChargePoint();
@@ -72,7 +72,7 @@ describe('ChargePointRepository (Unit)', () => {
       const result = await repository.find('uuid-123');
 
       expect(typeormRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'uuid-123' }
+        where: { id: 'uuid-123' },
       });
       expect(result?.chargePointId).toBe('CP-001');
     });
@@ -112,7 +112,7 @@ describe('ChargePointRepository (Unit)', () => {
       const result = await repository.findByChargePointId('CP-BIZ-001');
 
       expect(typeormRepository.findOne).toHaveBeenCalledWith({
-        where: { chargePointId: 'CP-BIZ-001' }
+        where: { chargePointId: 'CP-BIZ-001' },
       });
       expect(result?.chargePointId).toBe('CP-BIZ-001');
     });
@@ -127,11 +127,11 @@ describe('ChargePointRepository (Unit)', () => {
       typeormRepository.findOne.mockResolvedValue(updated);
 
       const result = await repository.update('uuid-123', {
-        chargePointModel: 'Updated Model'
+        chargePointModel: 'Updated Model',
       });
 
       expect(typeormRepository.update).toHaveBeenCalledWith('uuid-123', {
-        chargePointModel: 'Updated Model'
+        chargePointModel: 'Updated Model',
       });
       expect(result.chargePointModel).toBe('Updated Model');
     });
@@ -139,9 +139,7 @@ describe('ChargePointRepository (Unit)', () => {
     it('should throw if not found after update', async () => {
       typeormRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        repository.update('non-existent', {})
-      ).rejects.toThrow('not found after update');
+      await expect(repository.update('non-existent', {})).rejects.toThrow('not found after update');
     });
   });
 

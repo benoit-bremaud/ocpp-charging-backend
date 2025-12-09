@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 /**
  * Factory Pattern: Construire les réponses OCPP
- * 
+ *
  * Format OCPP:
  * - [3, messageId, payload] = CallResult (succès)
  * - [4, messageId, errorCode, errorMsg] = CallError (erreur)
@@ -12,7 +12,10 @@ export class ResponseBuilder {
   /**
    * Construire une réponse OCPP valide [3, messageId, payload]
    */
-  buildCallResult(messageId: string, payload: Record<string, any>): [number, string, Record<string, any>] {
+  buildCallResult(
+    messageId: string,
+    payload: Record<string, unknown>,
+  ): [number, string, Record<string, unknown>] {
     return [3, messageId, payload];
   }
 
@@ -21,8 +24,13 @@ export class ResponseBuilder {
    */
   buildCallError(
     messageId: string,
-    errorCode: 'NotImplemented' | 'NotSupported' | 'InternalError' | 'ProtocolError' | 'SecurityError',
-    errorMessage: string
+    errorCode:
+      | 'NotImplemented'
+      | 'NotSupported'
+      | 'InternalError'
+      | 'ProtocolError'
+      | 'SecurityError',
+    errorMessage: string,
   ): [number, string, string, string] {
     return [4, messageId, errorCode, errorMessage];
   }
@@ -30,14 +38,14 @@ export class ResponseBuilder {
   /**
    * Builder helper pour réponses courantes
    */
-  buildEmptyResponse(messageId: string): [number, string, Record<string, any>] {
+  buildEmptyResponse(messageId: string): [number, string, Record<string, unknown>] {
     return this.buildCallResult(messageId, {});
   }
 
   /**
    * Builder pour réponses avec status
    */
-  buildStatusResponse(messageId: string, status: string): [number, string, Record<string, any>] {
+  buildStatusResponse(messageId: string, status: string): [number, string, Record<string, unknown>] {
     return this.buildCallResult(messageId, { status });
   }
 }

@@ -12,12 +12,10 @@ import { IChargePointRepository } from '../../domain/repositories/IChargePointRe
 export class HandleChangeConfiguration {
   constructor(
     @Inject(CHARGE_POINT_REPOSITORY_TOKEN)
-    private readonly chargePointRepo: IChargePointRepository
+    private readonly chargePointRepo: IChargePointRepository,
   ) {}
 
-  async execute(
-    input: ChangeConfigurationInput,
-  ): Promise<ChangeConfigurationOutput> {
+  async execute(input: ChangeConfigurationInput): Promise<ChangeConfigurationOutput> {
     if (!input.key || !input.value) {
       return ChangeConfigurationOutput.rejected();
     }

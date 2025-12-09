@@ -150,7 +150,7 @@ describe('WebSocket Integration - Phase 6.3', () => {
 
     it('should handle all Phase 6 remote control requests', async () => {
       const phase6Actions = orchestrator.getHandlersByPhase(6);
-      phase6Actions.forEach(action => {
+      phase6Actions.forEach((action) => {
         expect(orchestrator.isActionSupported(action)).toBe(true);
       });
     });

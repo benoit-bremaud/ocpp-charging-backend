@@ -1,7 +1,4 @@
-import {
-  createCiString25Type,
-  isCiString25Type,
-} from '../CiString25Type';
+import { createCiString25Type, isCiString25Type } from '../CiString25Type';
 
 describe('CiString25Type', () => {
   describe('createCiString25Type()', () => {
@@ -17,9 +14,7 @@ describe('CiString25Type', () => {
 
     it('should reject string exceeding 25 characters', () => {
       const value = 'a'.repeat(26);
-      expect(() => createCiString25Type(value)).toThrow(
-        /maximum length is 25/
-      );
+      expect(() => createCiString25Type(value)).toThrow(/maximum length is 25/);
     });
 
     it('should reject empty string', () => {

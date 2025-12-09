@@ -282,9 +282,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
       await handler.execute(message, context);
 
       expect(logSpy).toHaveBeenCalled();
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('AUDIT_TAG'),
-      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('AUDIT_TAG'));
 
       logSpy.mockRestore();
     });
@@ -303,9 +301,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
 
       await handler.execute(message, context);
 
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Accepted'),
-      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Accepted'));
 
       logSpy.mockRestore();
     });
@@ -426,9 +422,7 @@ describe('HandleAuthorize - Complete Edge Case Coverage', () => {
       })) as OcppCallRequest[];
 
       const responses = await Promise.all(
-        messages.map((msg) =>
-          handler.execute(msg, new OcppContext('CP-020', msg.messageId)),
-        ),
+        messages.map((msg) => handler.execute(msg, new OcppContext('CP-020', msg.messageId))),
       );
 
       expect(responses).toHaveLength(10);

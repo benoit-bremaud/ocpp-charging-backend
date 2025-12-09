@@ -1,6 +1,6 @@
 /**
  * Barrel export for all output DTOs
- * 
+ *
  * Exports all response DTOs for OCPP handlers
  * Makes imports cleaner: import { ChargePointOutput } from '../dto/output'
  */

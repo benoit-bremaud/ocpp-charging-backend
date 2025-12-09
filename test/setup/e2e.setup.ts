@@ -36,7 +36,7 @@ export async function closeE2EApp(app: INestApplication): Promise<void> {
     const httpServer = app.getHttpServer();
     if (httpServer && httpServer.listening) {
       await new Promise<void>((resolve, reject) => {
-        httpServer.close((err: any) => {
+        httpServer.close((err: unknown) => {
           if (err) reject(err);
           else resolve();
         });
@@ -45,10 +45,10 @@ export async function closeE2EApp(app: INestApplication): Promise<void> {
 
     // Then close the NestJS app
     await app.close();
-    
+
     // Give time for cleanup
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     console.log('✅ E2E App closed successfully');
   } catch (error) {
     console.error('❌ Error closing E2E app:', error);

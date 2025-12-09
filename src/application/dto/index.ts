@@ -1,6 +1,6 @@
 /**
  * Barrel Export pour tous les DTOs Input/Output
- * 
+ *
  * Cette couche APPLICATION contient les Data Transfer Objects
  * pour les échanges entre couche PRESENTATION et APPLICATION
  */

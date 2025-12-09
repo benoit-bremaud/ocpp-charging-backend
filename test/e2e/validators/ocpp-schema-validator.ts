@@ -15,14 +15,14 @@ import addFormats from 'ajv-formats';
  * - Does NOT contain business logic
  */
 
-const ajv = new Ajv({ 
+const ajv = new Ajv({
   strict: false,
   loadSchema: async (uri: string) => {
     if (uri === 'http://json-schema.org/draft-04/schema#') {
       return { type: 'object', properties: {} };
     }
     throw new Error(`Unknown schema URI: ${uri}`);
-  }
+  },
 });
 addFormats(ajv);
 
@@ -60,7 +60,7 @@ function loadSchema(schemaFileName: string): any {
  * @returns { valid: boolean, errors?: string[] }
  */
 export function validateOCPPMessage(
-  payload: any,
+  payload: unknown,
   schemaFileName: string,
 ): { valid: boolean; errors?: string[] } {
   try {
@@ -72,13 +72,14 @@ export function validateOCPPMessage(
       return { valid: true };
     }
 
-    const errors = validate.errors?.map((err) => {
-      const path = err.instancePath || '<root>';
-      return `${path}: ${err.message}`;
-    }) || [];
+    const errors =
+      validate.errors?.map((err) => {
+        const path = err.instancePath || '<root>';
+        return `${path}: ${err.message}`;
+      }) || [];
 
     return { valid: false, errors };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       valid: false,
       errors: [`Validation error: ${error.message}`],
@@ -90,16 +91,11 @@ export function validateOCPPMessage(
  * Assert that a payload is valid against an OCPP schema
  * Throws if invalid (useful for tests)
  */
-export function assertOCPPMessageValid(
-  payload: any,
-  schemaFileName: string,
-): void {
+export function assertOCPPMessageValid(payload: unknown, schemaFileName: string): void {
   const result = validateOCPPMessage(payload, schemaFileName);
 
   if (!result.valid) {
     const errorMessage = result.errors?.join('\n') || 'Unknown validation error';
-    throw new Error(
-      `OCPP Schema Validation Failed (${schemaFileName}):\n${errorMessage}`,
-    );
+    throw new Error(`OCPP Schema Validation Failed (${schemaFileName}):\n${errorMessage}`);
   }
 }

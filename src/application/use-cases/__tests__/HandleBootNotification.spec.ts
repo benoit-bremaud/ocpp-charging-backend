@@ -59,9 +59,7 @@ describe('HandleBootNotification - Comprehensive Test Suite', () => {
       chargePointId: 'CP-001',
     };
 
-    repositoryMock.findByChargePointId.mockResolvedValue(
-      mockChargePoint as ChargePoint,
-    );
+    repositoryMock.findByChargePointId.mockResolvedValue(mockChargePoint as ChargePoint);
 
     const context = new OcppContext('CP-001', 'boot-001');
     const result = await useCase.execute(message, context);
@@ -372,9 +370,7 @@ describe('HandleBootNotification - Comprehensive Test Suite', () => {
 
     const context = new OcppContext('CP-014', 'boot-rapid');
 
-    const results = await Promise.all(
-      messages.map((msg) => useCase.execute(msg, context)),
-    );
+    const results = await Promise.all(messages.map((msg) => useCase.execute(msg, context)));
 
     expect(results).toHaveLength(5);
     expect(results.every((r) => r[0] === 3)).toBe(true);

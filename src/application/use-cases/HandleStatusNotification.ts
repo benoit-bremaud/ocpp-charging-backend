@@ -92,7 +92,7 @@ export class HandleStatusNotification {
    *   - ChargePoint not found → GenericError
    *   - Repository exceptions → Thrown (handled by middleware)
    */
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<any[]> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<unknown[]> {
     // =========================================================================
     // Step 1: VALIDATE MESSAGE TYPE
     // =========================================================================

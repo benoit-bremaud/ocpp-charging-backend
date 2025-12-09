@@ -36,6 +36,6 @@ export class ChargePointMapper {
    * Convertir ChargePoint[] → ChargePointOutput[]
    */
   toDTOArray(entities: ChargePoint[]): ChargePointOutput[] {
-    return entities.map(e => this.toDTO(e));
+    return entities.map((e) => this.toDTO(e));
   }
 }

@@ -34,7 +34,7 @@ export class ProcessOcppMessage {
    * @param context OCPP context (chargePointId, etc.)
    * @returns Response in wire format [3, messageId, payload] or [4, messageId, error, msg]
    */
-  async execute(rawMessage: any, context: OcppContext): Promise<any> {
+  async execute(rawMessage: unknown, context: OcppContext): Promise<unknown> {
     try {
       // Deserialize wire format to OcppMessage
       const message = deserializeOcppMessage(rawMessage);
@@ -71,8 +71,8 @@ export class ProcessOcppMessage {
    */
   private getHandler(
     action: string,
-  ): ((msg: OcppCallRequest, ctx: OcppContext) => Promise<any>) | null {
-    const handlers: Record<string, (msg: OcppCallRequest, ctx: OcppContext) => Promise<any>> = {
+  ): ((msg: OcppCallRequest, ctx: OcppContext) => Promise<unknown>) | null {
+    const handlers: Record<string, (msg: OcppCallRequest, ctx: OcppContext) => Promise<unknown>> = {
       BootNotification: (msg, ctx) => this.handleBootNotification.execute(msg, ctx),
       Heartbeat: (msg, ctx) => this.handleHeartbeat.execute(msg, ctx),
       StatusNotification: (msg, ctx) => this.handleStatusNotification.execute(msg, ctx),

@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppModule } from '@app/app.module';
+
+import { AppModule } from '../../src/app.module';
 import { E2E_TEST_CONFIG } from '../config/e2e-test.config';
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { E2E_TEST_CONFIG } from '../config/e2e-test.config';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      useFactory: () => ({
         type: 'postgres',
         host: E2E_TEST_CONFIG.database.host,
         port: E2E_TEST_CONFIG.database.port,

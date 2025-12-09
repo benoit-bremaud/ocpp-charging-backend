@@ -1,6 +1,6 @@
 /**
  * CancelReservationOutput Unit Tests
- * 
+ *
  * Tests unitaires pour le DTO de sortie CancelReservationOutput
  * Valide les statuts d'annulation de réservation
  */

@@ -15,7 +15,7 @@ describe('HandleReserveNow', () => {
         connectorId: 1,
         expiryDate: '2025-12-09',
         idTag: 'tag-123',
-        reservationId: 1
+        reservationId: 1,
       };
 
       const result = await useCase.execute('cp-001', input);
@@ -29,7 +29,7 @@ describe('HandleReserveNow', () => {
         expiryDate: '2025-12-09',
         idTag: 'tag-123',
         parentIdTag: 'parent-tag',
-        reservationId: 1
+        reservationId: 1,
       };
 
       const result = await useCase.execute('cp-001', input);

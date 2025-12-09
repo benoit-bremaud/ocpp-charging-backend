@@ -197,8 +197,8 @@ describe('ProcessOcppMessage', () => {
         },
         {
           provide: HandleHeartbeat,
-          useValue: { 
-            execute: jest.fn().mockRejectedValue(new Error('Database connection failed'))
+          useValue: {
+            execute: jest.fn().mockRejectedValue(new Error('Database connection failed')),
           },
         },
         {

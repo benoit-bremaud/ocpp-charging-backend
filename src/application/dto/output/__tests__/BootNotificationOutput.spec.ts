@@ -1,6 +1,6 @@
 /**
  * BootNotificationOutput Unit Tests
- * 
+ *
  * Tests unitaires pour le DTO de sortie BootNotificationOutput
  * Valide status, currentTime et interval
  */

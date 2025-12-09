@@ -1,6 +1,6 @@
 /**
  * DiagnosticsStatusNotificationOutput Unit Tests
- * 
+ *
  * Tests unitaires pour le DTO de sortie DiagnosticsStatusNotificationOutput
  * Valide tous les statuts de diagnostic possibles
  */

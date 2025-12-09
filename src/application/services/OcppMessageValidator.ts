@@ -9,9 +9,11 @@ export class OcppMessageValidator {
   /**
    * Valider un message OCPP brut [messageTypeId, messageId, action, payload]
    */
-  validateOcppMessage(message: any): void {
+  validateOcppMessage(message: unknown): void {
     if (!Array.isArray(message) || message.length < 3) {
-      throw new BadRequestException('Invalid OCPP message format: must be array with at least 3 elements');
+      throw new BadRequestException(
+        'Invalid OCPP message format: must be array with at least 3 elements',
+      );
     }
 
     const [messageTypeId, messageId, action] = message;
