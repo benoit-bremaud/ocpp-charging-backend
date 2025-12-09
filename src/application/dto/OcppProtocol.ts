@@ -60,29 +60,33 @@ export function serializeOcppMessage(msg: OcppMessage): unknown[] {
     // CALLERROR
     return [
       4,
-      msg.messageId as string,
+      msg.messageId,
       (msg as OcppCallError).errorCode,
       (msg as OcppCallError).errorDescription,
     ];
   }
   // Exhaustive check - this should never happen
   const exhaustiveCheck: never = msg;
-  throw new Error(`Invalid message type: ${(exhaustiveCheck as unknown).messageTypeId}`);
+  throw new Error(`Invalid message type: ${(exhaustiveCheck as unknown as Record<string, unknown>).messageTypeId}`);
 }
 
 /**
  * Deserialize wire format to OCPP message
  */
-export function deserializeOcppMessage(data: unknown[]): OcppMessage {
+export function deserializeOcppMessage(data: unknown): OcppMessage {
+  if (!Array.isArray(data)) {
+    throw new Error('Invalid message format: expected array');
+  }
+
   const [messageTypeId, messageId, ...rest] = data;
 
   if (messageTypeId === 2) {
     // CALL
     return {
       messageTypeId: 2,
-      messageId as string,
+      messageId: messageId as string,
       action: rest[0] as string,
-      payload: rest[1] || {},
+      payload: (rest[1] as Record<string, unknown>) || {},
     };
   }
 
@@ -90,8 +94,8 @@ export function deserializeOcppMessage(data: unknown[]): OcppMessage {
     // CALLRESULT
     return {
       messageTypeId: 3,
-      messageId as string,
-      payload: rest[0] || {},
+      messageId: messageId as string,
+      payload: (rest[0] as Record<string, unknown>) || {},
     };
   }
 
@@ -99,7 +103,7 @@ export function deserializeOcppMessage(data: unknown[]): OcppMessage {
     // CALLERROR
     return {
       messageTypeId: 4,
-      messageId as string,
+      messageId: messageId as string,
       errorCode: rest[0] as string,
       errorDescription: rest[1] as string,
     };
@@ -114,7 +118,7 @@ export function deserializeOcppMessage(data: unknown[]): OcppMessage {
 export function createCallResult(messageId: string, payload: Record<string, unknown>): OcppCallResult {
   return {
     messageTypeId: 3,
-    messageId as string,
+    messageId,
     payload,
   };
 }
@@ -129,7 +133,7 @@ export function createCallError(
 ): OcppCallError {
   return {
     messageTypeId: 4,
-    messageId as string,
+    messageId,
     errorCode,
     errorDescription,
   };

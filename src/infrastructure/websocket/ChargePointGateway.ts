@@ -83,7 +83,7 @@ export class ChargePointGateway implements OnGatewayConnection, OnGatewayDisconn
       const messageId = data[1];
 
       // Create OCPP context
-      const context = new OcppContext(chargePointId, messageId, sourceIp);
+      const context = new OcppContext(chargePointId, messageId as string, sourceIp);
 
       // Route to dispatcher
       const response = await this.processOcppMessage.execute(data, context);

@@ -23,7 +23,7 @@ export function buildBootNotificationResponse(
     currentTime: new Date().toISOString(),
     interval,
   };
-  const response = createCallResult(messageId, payload);
+  const response = createCallResult(messageId, payload as unknown as Record<string, unknown>);
   return serializeOcppMessage(response);
 }
 
@@ -36,7 +36,7 @@ export function buildHeartbeatResponse(messageId: string): unknown[] {
   const payload: HeartbeatResponsePayload = {
     currentTime: new Date().toISOString(),
   };
-  const response = createCallResult(messageId, payload);
+  const response = createCallResult(messageId, payload as unknown as Record<string, unknown>);
   return serializeOcppMessage(response);
 }
 

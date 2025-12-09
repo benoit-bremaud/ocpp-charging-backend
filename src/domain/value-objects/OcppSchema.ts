@@ -8,9 +8,18 @@
  * SOLID: SRP - validates schemas only.
  */
 
+
+export interface PropertySchema {
+  type?: string;
+  enum?: unknown[];
+  maxLength?: number;
+  minimum?: number;
+  format?: string;
+  minLength?: number;
+}
 export interface OcppSchemaDefinition {
   type: 'object';
-  properties: Record<string, unknown>;
+  properties: Record<string, PropertySchema>;
   required: string[];
   additionalProperties: boolean;
 }
@@ -118,7 +127,7 @@ export class OcppSchema {
     }
 
     for (const [key, value] of Object.entries(payload)) {
-      const propSchema = schema.properties[key];
+      const propSchema = schema.properties[key] as PropertySchema | undefined;
 
       if (!propSchema) continue;
 
