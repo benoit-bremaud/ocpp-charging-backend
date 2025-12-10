@@ -1,6 +1,6 @@
 # ============================================================================
 # OCPP CHARGING BACKEND - COMPREHENSIVE GITIGNORE
-# Version: 2.1 (Production-Ready - Fixed)
+# Version: 2.2 (Production-Ready - Enhanced)
 # Last Updated: 2025-12-10
 # ============================================================================
 # Professional .gitignore for enterprise NestJS + TypeScript project
@@ -142,14 +142,21 @@ vite.config.ts.timestamp-*
 .env
 .env.local
 .env.*.local
+.env.development
 .env.development.local
-.env.test.local
-.env.staging.local
+.env.production
 .env.production.local
+.env.staging
+.env.staging.local
+.env.test
+.env.test.local
 
 # Allow example/template env files
 !.env.example
 !.env.template
+!.env.development.example
+!.env.production.example
+!.env.test.example
 
 # IDPs and OAuth tokens
 .oauth/
@@ -607,6 +614,7 @@ apikeys/
 # ✓ IDE configurations don't conflict between developers
 # ✓ Node modules and dependencies are never committed
 # ✓ Folder structures (.gitkeep) are preserved
+# ✓ Environment files (.env.*) are never committed
 #
 # Last reviewed: 2025-12-10
 # Compatible with: NestJS, TypeScript, Node.js, Docker, Kubernetes
