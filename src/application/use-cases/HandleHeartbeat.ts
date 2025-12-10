@@ -4,6 +4,8 @@ import { buildFormationViolation, buildHeartbeatResponse } from '../dto/OcppResp
 import { OcppCallRequest } from '../dto/OcppProtocol';
 import { OcppContext } from '../../domain/value-objects/OcppContext';
 
+type OcppResponse = [number, string, Record<string, unknown>] | [number, string, string];
+
 /**
  * Use-Case: Handle Heartbeat (OCPP 1.6 Spec)
  *
@@ -24,19 +26,25 @@ export class HandleHeartbeat {
    * @param context Message metadata
    * @returns OCPP CALLRESULT or CALLERROR array
    */
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<unknown[]> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // OCPP 1.6: Must be CALL type (messageTypeId = 2)
     if (message.messageTypeId !== 2) {
       this.logger.error(
         `[${context.chargePointId}] Heartbeat expects CALL (messageTypeId 2), got ${message.messageTypeId}`,
       );
-      return buildFormationViolation(context.messageId, 'Heartbeat expects CALL message type');
+      return buildFormationViolation(
+        context.messageId,
+        'Heartbeat expects CALL message type',
+      ) as OcppResponse;
     }
 
     // OCPP 1.6: Heartbeat payload MUST be empty object {}
     if (typeof message.payload !== 'object' || message.payload === null) {
       this.logger.warn(`[${context.chargePointId}] Heartbeat: payload must be object`);
-      return buildFormationViolation(context.messageId, 'Heartbeat payload must be empty object');
+      return buildFormationViolation(
+        context.messageId,
+        'Heartbeat payload must be empty object',
+      ) as OcppResponse;
     }
 
     const payloadKeys = Object.keys(message.payload);
@@ -44,7 +52,10 @@ export class HandleHeartbeat {
       this.logger.warn(
         `[${context.chargePointId}] Heartbeat: payload must be empty, got keys: ${payloadKeys.join(', ')}`,
       );
-      return buildFormationViolation(context.messageId, 'Heartbeat payload must be empty object');
+      return buildFormationViolation(
+        context.messageId,
+        'Heartbeat payload must be empty object',
+      ) as OcppResponse;
     }
 
     this.logger.log(
@@ -52,6 +63,6 @@ export class HandleHeartbeat {
     );
 
     // OCPP 1.6: Return CALLRESULT with currentTime
-    return buildHeartbeatResponse(context.messageId);
+    return buildHeartbeatResponse(context.messageId) as OcppResponse;
   }
 }
