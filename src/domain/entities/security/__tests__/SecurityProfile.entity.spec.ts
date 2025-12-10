@@ -1,6 +1,7 @@
 import { SecurityProfile, SecurityProfileLevel } from '../SecurityProfile.entity';
-import { TLSVersion } from '../../../value-objects/TLSVersion';
+
 import { CipherSuite } from '../../../value-objects/CipherSuite';
+import { TLSVersion } from '../../../value-objects/TLSVersion';
 
 describe('SecurityProfile Entity', () => {
   let tlsVersion: TLSVersion;
@@ -83,7 +84,7 @@ describe('SecurityProfile Entity', () => {
       const profile = SecurityProfile.create(
         'p3',
         SecurityProfileLevel.PROFILE_3,
-        tlsVersion,
+        TLSVersion.create('TLS_1_3'),
         cipherSuites,
       );
 
@@ -97,7 +98,7 @@ describe('SecurityProfile Entity', () => {
       const profile = SecurityProfile.create(
         'p2',
         SecurityProfileLevel.PROFILE_2,
-        tlsVersion,
+        TLSVersion.create('TLS_1_3'),
         cipherSuites,
       );
 

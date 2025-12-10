@@ -105,9 +105,23 @@ export class SecurityProfile {
       throw new Error('At least one cipher suite must be specified');
     }
 
-    // TLS 1.2 minimum for all profiles
-    if (tlsVersion.getValue() !== 'TLS_1_2' && tlsVersion.getValue() !== 'TLS_1_3') {
-      throw new Error(`All profiles require TLS 1.2 or higher`);
+    // Profile 1: TLS 1.2 minimum
+    if (level === SecurityProfileLevel.PROFILE_1) {
+      if (tlsVersion.getValue() !== 'TLS_1_2' && tlsVersion.getValue() !== 'TLS_1_3') {
+        throw new Error(`Profile 1 requires TLS 1.2 or higher`);
+      }
+    }
+    // Profile 2: TLS 1.2 minimum (for mutual TLS)
+    else if (level === SecurityProfileLevel.PROFILE_2) {
+      if (tlsVersion.getValue() !== 'TLS_1_2' && tlsVersion.getValue() !== 'TLS_1_3') {
+        throw new Error(`Profile 2 requires TLS 1.2 or higher for mutual TLS`);
+      }
+    }
+    // Profile 3: TLS 1.3 MINIMUM (strictest security)
+    else if (level === SecurityProfileLevel.PROFILE_3) {
+      if (tlsVersion.getValue() !== 'TLS_1_3') {
+        throw new Error(`Profile 3 requires TLS 1.3 minimum for maximum security`);
+      }
     }
   }
 
