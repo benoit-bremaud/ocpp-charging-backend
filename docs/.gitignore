@@ -1,0 +1,13 @@
+# Generated files
+*.pdf
+*.html
+*.zip
+coverage/
+build/
+dist/
+.DS_Store
+.idea/
+*.swp
+*~
+*.temp
+node_modules/

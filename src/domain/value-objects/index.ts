@@ -1,3 +1,8 @@
+// Value Objects - Security Domain (NEW)
+export * from './TLSVersion';
+export * from './CipherSuite';
+export * from './CertificateType';
+
 // OcppString - Branded types for OCPP string constraints
 export * from './OcppString';
 
