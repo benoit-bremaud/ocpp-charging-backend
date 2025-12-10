@@ -49,7 +49,7 @@ export class HandleRemoteStartTransaction {
     }
 
     // Validate connector (if specified)
-    if (input.connectorId && input.connectorId < 0) {
+    if (input.connectorId && (input.connectorId < 0 || !Number.isInteger(input.connectorId))) {
       return RemoteStartTransactionOutput.rejected();
     }
 

@@ -7,11 +7,9 @@ import { IChargePointRepository } from '../../../domain/repositories/IChargePoin
 import { RemoteStartTransactionInput } from '../../dto/input/RemoteStartTransactionInput';
 import { RemoteStartTransactionOutput } from '../../dto/output/RemoteStartTransactionOutput';
 
-
 describe('HandleRemoteStartTransaction', () => {
   let handler: HandleRemoteStartTransaction;
   let repository: jest.Mocked<IChargePointRepository>;
-
 
   beforeEach(async () => {
     const mockRepository = {
@@ -23,7 +21,6 @@ describe('HandleRemoteStartTransaction', () => {
       delete: jest.fn(),
     };
 
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         HandleRemoteStartTransaction,
@@ -34,11 +31,9 @@ describe('HandleRemoteStartTransaction', () => {
       ],
     }).compile();
 
-
     handler = module.get<HandleRemoteStartTransaction>(HandleRemoteStartTransaction);
     repository = module.get<jest.Mocked<IChargePointRepository>>(CHARGE_POINT_REPOSITORY_TOKEN);
   });
-
 
   describe('execute', () => {
     // ✅ EXISTING 6 TESTS - Happy Path & Basic Validation
@@ -49,15 +44,12 @@ describe('HandleRemoteStartTransaction', () => {
       chargePoint.chargePointId = 'CP-001';
       repository.find.mockResolvedValue(chargePoint);
 
-
       const input = new RemoteStartTransactionInput('CP-001', 'VEHICLE-123', 1);
       const result = await handler.execute(input);
-
 
       expect(result.status).toBe('Accepted');
       expect(repository.find).toHaveBeenCalledWith('CP-001');
     });
-
 
     it('should reject if idTag exceeds maxLength (20)', async () => {
       const input = new RemoteStartTransactionInput(
@@ -65,60 +57,45 @@ describe('HandleRemoteStartTransaction', () => {
         'VEHICLE-123-TOOLONG-EXCEEDS', // > 20 chars
       );
 
-
       const result = await handler.execute(input);
-
 
       expect(result.status).toBe('Rejected');
     });
-
 
     it('should reject if idTag is empty', async () => {
       const input = new RemoteStartTransactionInput('CP-001', '');
 
-
       const result = await handler.execute(input);
-
 
       expect(result.status).toBe('Rejected');
     });
-
 
     it('should reject if charge point not found', async () => {
       repository.find.mockResolvedValue(null);
 
-
       const input = new RemoteStartTransactionInput('CP-NOT-FOUND', 'VEHICLE-123');
-
 
       const result = await handler.execute(input);
 
-
       expect(result.status).toBe('Rejected');
     });
-
 
     it('should reject if connectorId is negative', async () => {
       const chargePoint = new ChargePoint();
       chargePoint.id = 'cp-001';
       repository.find.mockResolvedValue(chargePoint);
 
-
       const input = new RemoteStartTransactionInput('CP-001', 'VEHICLE-123', -1);
-
 
       const result = await handler.execute(input);
 
-
       expect(result.status).toBe('Rejected');
     });
-
 
     it('should accept with optional chargingProfile', async () => {
       const chargePoint = new ChargePoint();
       chargePoint.id = 'cp-001';
       repository.find.mockResolvedValue(chargePoint);
-
 
       const input = new RemoteStartTransactionInput('CP-001', 'VEHICLE-123', 1, {
         chargingProfileId: 1,
@@ -127,9 +104,7 @@ describe('HandleRemoteStartTransaction', () => {
         chargingProfileKind: 'Relative',
       });
 
-
       const result = await handler.execute(input);
-
 
       expect(result.status).toBe('Accepted');
     });
