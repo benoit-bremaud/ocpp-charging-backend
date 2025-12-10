@@ -29,13 +29,24 @@ export class HandleRemoteStopTransaction {
    * @returns RemoteStopTransactionOutput with Accepted or Rejected status
    */
   async execute(input: RemoteStopTransactionInput): Promise<RemoteStopTransactionOutput> {
-    // Validate transactionId (must be positive)
-    if (!input.transactionId || input.transactionId <= 0) {
+    // Validate transactionId (must be positive integer)
+    if (
+      !input.transactionId ||
+      input.transactionId <= 0 ||
+      !Number.isInteger(input.transactionId)
+    ) {
       return RemoteStopTransactionOutput.rejected();
     }
 
-    // Find charge point
-    const chargePoint = await this.chargePointRepo.find(input.chargePointId);
+    // Find charge point (with error handling)
+    let chargePoint;
+    try {
+      chargePoint = await this.chargePointRepo.find(input.chargePointId);
+    } catch (error) {
+      // Repository error → return Rejected gracefully
+      return RemoteStopTransactionOutput.rejected();
+    }
+
     if (!chargePoint) {
       return RemoteStopTransactionOutput.rejected();
     }
