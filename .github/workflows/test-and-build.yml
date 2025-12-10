@@ -56,13 +56,19 @@ jobs:
       - name: Run tests
         run: npm test -- --coverage
         env:
+          NODE_ENV: test
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           DATABASE_USER: test_user
           DATABASE_PASSWORD: test_password
           DATABASE_NAME: test_db
           REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
           JWT_SECRET: test-secret-key-at-least-32-characters-long
+          API_PORT: 3001
+          PORT: 3001
+          API_HOST: localhost
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3

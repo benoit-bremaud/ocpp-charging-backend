@@ -2,10 +2,10 @@ import { AppModule } from './app.module';
 import { HttpLoggingInterceptor } from './infrastructure/logger/http-logging.interceptor';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { createSwaggerConfig } from './swagger.config';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -43,7 +43,8 @@ async function bootstrap() {
   });
 
   // Start Server
-  await app.listen(process.env.PORT ?? 3000);
+  // await app.listen(process.env.PORT ?? 3000);
+  await app.listen(parseInt(process.env.API_PORT || process.env.PORT || '3001', 10));
 
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   logger.log(`Application is running on: ${await app.getUrl()}`);
