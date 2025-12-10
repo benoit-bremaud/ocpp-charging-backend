@@ -1,5 +1,5 @@
-import { TLSVersion } from '../../value-objects/TLSVersion';
 import { CipherSuite } from '../../value-objects/CipherSuite';
+import { TLSVersion } from '../../value-objects/TLSVersion';
 
 /**
  * SecurityProfile Entity
@@ -105,11 +105,9 @@ export class SecurityProfile {
       throw new Error('At least one cipher suite must be specified');
     }
 
-    // TLS 1.2 minimum for Profile 1 and 2
-    if (level <= SecurityProfileLevel.PROFILE_2) {
-      if (tlsVersion.getValue() !== 'TLS_1_2' && tlsVersion.getValue() !== 'TLS_1_3') {
-        throw new Error(`Profile ${level} requires TLS 1.2 or higher`);
-      }
+    // TLS 1.2 minimum for all profiles
+    if (tlsVersion.getValue() !== 'TLS_1_2' && tlsVersion.getValue() !== 'TLS_1_3') {
+      throw new Error(`All profiles require TLS 1.2 or higher`);
     }
   }
 
@@ -179,16 +177,21 @@ export class SecurityProfile {
   /**
    * Upgrade profile to higher security level
    */
-  upgradeToProfile(newLevel: SecurityProfileLevel): void {
+  upgradeToProfile(newLevel: SecurityProfileLevel): SecurityProfile {
     if (newLevel <= this.level) {
       throw new Error(`Cannot downgrade from Profile ${this.level} to Profile ${newLevel}`);
     }
     if (newLevel > SecurityProfileLevel.PROFILE_3) {
       throw new Error(`Invalid profile level: ${newLevel}`);
     }
-    // In real implementation, would mutate this.level
-    // For immutability, would return new SecurityProfile instance
-    this.updatedAt = new Date();
+
+    // Create new instance with updated level, keep other properties
+    return SecurityProfile.create(
+      this.id, // ← pas chargingStationId
+      newLevel,
+      this.tlsVersion,
+      this.cipherSuites, // ← c'est un array
+    );
   }
 
   /**
