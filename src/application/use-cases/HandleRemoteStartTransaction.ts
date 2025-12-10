@@ -35,8 +35,15 @@ export class HandleRemoteStartTransaction {
       return RemoteStartTransactionOutput.rejected();
     }
 
-    // Find charge point
-    const chargePoint = await this.chargePointRepo.find(input.chargePointId);
+    // Find charge point (with error handling)
+    let chargePoint;
+    try {
+      chargePoint = await this.chargePointRepo.find(input.chargePointId);
+    } catch (error) {
+      // Repository error → return Rejected gracefully
+      return RemoteStartTransactionOutput.rejected();
+    }
+
     if (!chargePoint) {
       return RemoteStartTransactionOutput.rejected();
     }

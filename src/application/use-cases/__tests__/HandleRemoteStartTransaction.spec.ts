@@ -254,6 +254,18 @@ describe('HandleRemoteStartTransaction', () => {
       expect(repository.find).toHaveBeenCalledTimes(1);
     });
 
+    it('should call repository.find exactly once per execution', async () => {
+      const chargePoint = new ChargePoint();
+      chargePoint.id = 'cp-001';
+      chargePoint.chargePointId = 'CP-001';
+      repository.find.mockResolvedValue(chargePoint);
+
+      const input = new RemoteStartTransactionInput('CP-001', 'USER-007', 1);
+      await handler.execute(input);
+
+      expect(repository.find).toHaveBeenCalledTimes(1);
+    });
+
     it('should handle repository errors gracefully', async () => {
       repository.find.mockRejectedValue(new Error('Database connection failed'));
 
@@ -288,17 +300,12 @@ describe('HandleRemoteStartTransaction', () => {
       chargePoint2.id = 'cp-002';
       chargePoint2.chargePointId = 'CP-002';
 
-      repository.find
-        .mockResolvedValueOnce(chargePoint1)
-        .mockResolvedValueOnce(chargePoint2);
+      repository.find.mockResolvedValueOnce(chargePoint1).mockResolvedValueOnce(chargePoint2);
 
       const input1 = new RemoteStartTransactionInput('CP-001', 'USER-009', 1);
       const input2 = new RemoteStartTransactionInput('CP-002', 'USER-010', 2);
 
-      const results = await Promise.all([
-        handler.execute(input1),
-        handler.execute(input2),
-      ]);
+      const results = await Promise.all([handler.execute(input1), handler.execute(input2)]);
 
       expect(results).toHaveLength(2);
       results.forEach((result) => {
