@@ -28,7 +28,7 @@ export interface PropertySchema {
 export interface OcppSchemaDefinition {
   type: 'object';
   properties: Record<string, PropertySchema>;
-  required: string[];
+  required?: string[];
   additionalProperties: boolean;
 }
 
@@ -121,11 +121,12 @@ export class OcppSchema {
   }
 
   /**
-   * Validate that a loaded JSON file has the correct schema structure.
-   * Prevents loading malformed schema definitions.
+   * Validate schema structure.
+   * Required fields: type=object, properties, additionalProperties
+   * Optional fields: required (can be empty array or omitted)
    *
-   * @param obj The loaded JSON object
-   * @returns true if valid schema structure, false otherwise
+   * @param obj Unknown object to validate
+   * @returns true if valid OcppSchemaDefinition, false otherwise
    */
   private static isValidSchema(obj: unknown): obj is OcppSchemaDefinition {
     if (typeof obj !== 'object' || obj === null) return false;
@@ -135,7 +136,7 @@ export class OcppSchema {
     return (
       schema.type === 'object' &&
       typeof schema.properties === 'object' &&
-      Array.isArray(schema.required) &&
+      (Array.isArray(schema.required) || schema.required === undefined) &&
       typeof schema.additionalProperties === 'boolean'
     );
   }
@@ -148,14 +149,10 @@ export class OcppSchema {
    * @returns Validation result: { valid: boolean; errors?: string[] }
    *
    * Example:
-   * const result = OcppSchema.validate('StartTransaction', {
-   *   connectorId: 1,
-   *   idTag: 'DRIVER123',
-   *   meterStart: 1000
-   * });
-   * if (!result.valid) {
-   *   console.log(result.errors); // ['Field X is required', ...]
-   * }
+   * ```
+   * const result = OcppSchema.validate('StartTransaction', { connectorId: 1 });
+   * if (result.valid) { ... }
+   * ```
    */
   static validate(
     action: string,
@@ -177,9 +174,11 @@ export class OcppSchema {
     const errors: string[] = [];
 
     // ✅ Step 1: Check required fields
-    for (const required of schema.required) {
-      if (!(required in payload)) {
-        errors.push(`Missing required field: ${required}`);
+    if (schema.required) {
+      for (const required of schema.required) {
+        if (!(required in payload)) {
+          errors.push(`Missing required field: ${required}`);
+        }
       }
     }
 
@@ -256,25 +255,5 @@ export class OcppSchema {
   private static isValidIso8601(value: string): boolean {
     const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{0,3})?Z?$/;
     return iso8601Regex.test(value);
-  }
-
-  /**
-   * Get a schema by action name.
-   *
-   * @param action OCPP action name (e.g., "StartTransaction")
-   * @returns Schema definition or null if not found
-   */
-  static getSchema(action: string): OcppSchemaDefinition | null {
-    return this.SCHEMAS[action] || null;
-  }
-
-  /**
-   * Get list of all available schemas.
-   * Useful for debugging or documentation.
-   *
-   * @returns Array of action names that have schemas, sorted alphabetically
-   */
-  static getAvailableSchemas(): string[] {
-    return Object.keys(this.SCHEMAS).sort();
   }
 }

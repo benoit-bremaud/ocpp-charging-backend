@@ -3,14 +3,17 @@ import { OcppContext } from '../../domain/value-objects/OcppContext';
 import { OcppCallRequest } from '../dto/OcppProtocol';
 
 type OcppCallResult = [number, string, Record<string, unknown>];
-type OcppCallError = [number, string, string, string];
+type OcppCallError = [number, string, string];
 type OcppResponse = OcppCallResult | OcppCallError;
 
 @Injectable()
 export class HandleClearChargingProfile {
   private readonly logger = new Logger(HandleClearChargingProfile.name);
 
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
+  async execute(
+    message: OcppCallRequest,
+    context: OcppContext,
+  ): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
       this.logger.error(
@@ -20,7 +23,6 @@ export class HandleClearChargingProfile {
         4, // CALLERROR
         message.messageId,
         'GenericError',
-        'Invalid messageTypeId',
       ];
     }
 
