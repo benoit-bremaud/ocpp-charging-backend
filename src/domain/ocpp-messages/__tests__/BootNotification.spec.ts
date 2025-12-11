@@ -6,7 +6,7 @@ describe('BootNotificationMessage', () => {
       chargePointVendor: 'Tesla',
       chargePointModel: 'Model S',
     };
-    
+
     const msg = BootNotificationMessage.fromOcppPayload(payload);
     expect(msg.chargePointVendor).toBe('Tesla');
   });

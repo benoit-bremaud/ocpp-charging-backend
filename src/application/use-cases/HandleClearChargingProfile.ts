@@ -7,14 +7,14 @@ type OcppCallError = [number, string, string, string];
 type OcppResponse = OcppCallResult | OcppCallError;
 
 @Injectable()
-export class HandleStartTransaction {
-  private readonly logger = new Logger(HandleStartTransaction.name);
+export class HandleClearChargingProfile {
+  private readonly logger = new Logger(HandleClearChargingProfile.name);
 
   async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
       this.logger.error(
-        `StartTransaction expects CALL messageTypeId 2, got ${message.messageTypeId}`,
+        `ClearChargingProfile expects CALL messageTypeId 2, got ${message.messageTypeId}`,
       );
       return [
         4, // CALLERROR
@@ -24,24 +24,18 @@ export class HandleStartTransaction {
       ];
     }
 
-    const payload = message.payload as {
-      connectorId?: number;
-      idTag?: string;
-    };
+    const { connectorId } = message.payload as { connectorId?: number };
 
     this.logger.debug(
-      `[${context.chargePointId}] StartTransaction - ConnectorId: ${payload.connectorId}, IdTag: ${payload.idTag}`,
+      `[${context.chargePointId}] ClearChargingProfile - ConnectorId: ${connectorId ?? 'all'}`,
     );
 
-    // Return CALLRESULT with transaction confirmation
+    // Return CALLRESULT with Accepted status
     return [
       3, // CALLRESULT
       message.messageId,
       {
-        transactionId: Math.floor(Math.random() * 1000000),
-        idTagInfo: {
-          status: 'Accepted',
-        },
+        status: 'Accepted',
       },
     ];
   }
