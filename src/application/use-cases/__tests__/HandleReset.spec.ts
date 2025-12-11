@@ -93,9 +93,7 @@ describe('HandleReset', () => {
         chargePointId: 'CP-004',
       } as ChargePoint);
 
-      const results = await Promise.all(
-        inputs.map((input) => handler.execute(input))
-      );
+      const results = await Promise.all(inputs.map((input) => handler.execute(input)));
 
       expect(results).toHaveLength(3);
       expect(results.every((r) => r.status === 'Accepted')).toBe(true);
@@ -186,8 +184,8 @@ describe('HandleReset', () => {
           handler.execute({
             chargePointId: 'CP-012',
             type: type as any,
-          })
-        )
+          }),
+        ),
       );
 
       expect(results.every((r) => r.status === 'Rejected')).toBe(true);
@@ -230,9 +228,7 @@ describe('HandleReset', () => {
         type: 'Soft',
       };
 
-      mockRepository.find.mockRejectedValue(
-        new Error('Database connection error')
-      );
+      mockRepository.find.mockRejectedValue(new Error('Database connection error'));
 
       try {
         await handler.execute(input);

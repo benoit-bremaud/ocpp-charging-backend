@@ -138,9 +138,7 @@ describe('HandleDataTransfer', () => {
       } as ChargePoint);
 
       const context = new OcppContext('CP-005', 'dt-seq');
-      const results = await Promise.all(
-        messages.map((msg) => handler.execute(msg, context))
-      );
+      const results = await Promise.all(messages.map((msg) => handler.execute(msg, context)));
 
       expect(results).toHaveLength(3);
       expect(results.every((r: any) => r[0] === 3)).toBe(true);
@@ -239,7 +237,7 @@ describe('HandleDataTransfer', () => {
       const result = (await handler.execute(message, context)) as any;
 
       expect(result[0]).toBe(4);
-    //   expect(result[2]).toContain('not found');
+      //   expect(result[2]).toContain('not found');
       expect(result[2]).toBe('GenericError');
     });
   });

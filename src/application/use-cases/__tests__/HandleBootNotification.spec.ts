@@ -280,12 +280,10 @@ describe('HandleBootNotification', () => {
         },
       };
 
-      mockRepository.findByChargePointId.mockRejectedValue(
-        new Error('Database connection error')
-      );
+      mockRepository.findByChargePointId.mockRejectedValue(new Error('Database connection error'));
 
       const context = new OcppContext('CP-012', 'boot-012');
-      
+
       try {
         await handler.execute(message, context);
       } catch (error) {

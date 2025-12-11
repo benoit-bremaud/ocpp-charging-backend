@@ -82,9 +82,7 @@ describe('ChargePointGateway - Integration Tests', () => {
 
     it('should handle OCPP message processing errors gracefully', async () => {
       gateway.handleConnection(mockClient);
-      mockProcessOcppMessage.execute.mockRejectedValueOnce(
-        new Error('Processing failed'),
-      );
+      mockProcessOcppMessage.execute.mockRejectedValueOnce(new Error('Processing failed'));
 
       const message = [2, 'msg-001', 'UnknownAction', {}];
       await gateway.handleOcppMessage(mockClient, message);
@@ -109,12 +107,9 @@ describe('ChargePointGateway - Integration Tests', () => {
     it('should send command to connected charge point', () => {
       gateway.handleConnection(mockClient);
 
-      const result = gateway.sendCommandToChargePoint(
-        'CP-001',
-        'cmd-001',
-        'Reset',
-        { type: 'Hard' },
-      );
+      const result = gateway.sendCommandToChargePoint('CP-001', 'cmd-001', 'Reset', {
+        type: 'Hard',
+      });
 
       expect(result).toBe(true);
       expect(mockClient.emit).toHaveBeenCalledWith('ocpp:command', [
@@ -126,12 +121,9 @@ describe('ChargePointGateway - Integration Tests', () => {
     });
 
     it('should not send command to disconnected charge point', () => {
-      const result = gateway.sendCommandToChargePoint(
-        'CP-002',
-        'cmd-001',
-        'Reset',
-        { type: 'Hard' },
-      );
+      const result = gateway.sendCommandToChargePoint('CP-002', 'cmd-001', 'Reset', {
+        type: 'Hard',
+      });
 
       expect(result).toBe(false);
     });
@@ -147,9 +139,7 @@ describe('ChargePointGateway - Integration Tests', () => {
         [2, 'msg-005', 'Heartbeat', {}],
       ];
 
-      const promises = messages.map((msg) =>
-        gateway.handleOcppMessage(mockClient, msg),
-      );
+      const promises = messages.map((msg) => gateway.handleOcppMessage(mockClient, msg));
 
       await Promise.all(promises);
       expect(mockProcessOcppMessage.execute).toHaveBeenCalledTimes(5);
@@ -182,7 +172,7 @@ describe('ChargePointGateway - Integration Tests', () => {
       const client2 = {
         disconnect: jest.fn(),
         emit: jest.fn(),
-        handshake:{
+        handshake: {
           query: { chargePointId: 'CP-002' },
           address: '192.168.1.101',
         },
@@ -270,10 +260,7 @@ describe('ChargePointGateway - Integration Tests', () => {
       const message = [2, 'msg-001', 'Heartbeat', {}];
       await gateway.handleOcppMessage(mockClient, message);
 
-      expect(mockProcessOcppMessage.execute).toHaveBeenCalledWith(
-        message,
-        expect.any(OcppContext),
-      );
+      expect(mockProcessOcppMessage.execute).toHaveBeenCalledWith(message, expect.any(OcppContext));
     });
 
     it('should cleanup all client connections on disconnect', () => {
