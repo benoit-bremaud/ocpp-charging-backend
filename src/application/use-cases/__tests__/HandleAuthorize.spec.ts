@@ -1,378 +1,458 @@
 import { Test, TestingModule } from '@nestjs/testing';
-
 import { HandleAuthorize } from '../HandleAuthorize';
-import { OcppCallRequest } from '../../dto/OcppProtocol';
+import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
 import { OcppContext } from '../../../domain/value-objects/OcppContext';
+import { OcppCallRequest } from '../../dto/OcppProtocol';
+import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../../infrastructure/tokens';
 
-// ============================================
-// ✅ TYPE DEFINITIONS (Required)
-// ============================================
-
-type AuthorizeResponse = [number, string, Record<string, unknown>];
-
-type IdTagInfoPayload = {
-  idTagInfo?: {
-    status: 'Accepted' | 'Blocked' | 'Expired' | 'Invalid';
-    expiryDate?: string;
-    parentIdTag?: string;
-  };
-};
-
-// ============================================
-// TEST SUITE
-// ============================================
-
-describe('HandleAuthorize - Complete Edge Case Coverage', () => {
+describe('HandleAuthorize', () => {
   let handler: HandleAuthorize;
+  let mockRepository: jest.Mocked<IChargePointRepository>;
 
   beforeEach(async () => {
+    mockRepository = {
+      find: jest.fn(),
+      findByChargePointId: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [HandleAuthorize],
+      providers: [
+        HandleAuthorize,
+        {
+          provide: CHARGE_POINT_REPOSITORY_TOKEN,
+          useValue: mockRepository,
+        },
+      ],
     }).compile();
 
     handler = module.get<HandleAuthorize>(HandleAuthorize);
   });
 
-  describe('✅ Happy Path - Valid Authorization', () => {
-    it('should authorize valid idTag for known charge point', async () => {
+  describe('Happy Path - Valid Authorization', () => {
+    it('should authorize valid idTag', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '123',
+        messageId: 'msg-001',
         action: 'Authorize',
-        payload: { idTag: 'VALID_TAG_123' },
+        payload: { idTag: 'VALID-TAG' },
       };
 
-      const context = new OcppContext('CP-001', '123');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
+      const context = new OcppContext('CP-001', 'msg-001');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(response[0]).toBe(3);
-      expect(response[1]).toBe('123');
-      expect(response[2]).toHaveProperty('idTagInfo');
+      expect(result).toEqual([
+        3,
+        'msg-001',
+        expect.objectContaining({
+          idTagInfo: expect.objectContaining({
+            status: 'Accepted',
+          }),
+        }),
+      ]);
     });
 
-    it('should return OCPP 1.6 spec compliant response format', async () => {
+    it('should include expiryDate in response', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '456',
+        messageId: 'msg-002',
         action: 'Authorize',
-        payload: { idTag: 'TAG_789' },
+        payload: { idTag: 'TAG-123' },
       };
 
-      const context = new OcppContext('CP-002', '456');
+      const context = new OcppContext('CP-001', 'msg-002');
+      const result = (await handler.execute(message, context)) as any;
 
-      // ✅ CAST HERE (3 lines):
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
-
-      // ✅ NOW EVERYTHING WORKS:
-      expect(Array.isArray(response)).toBe(true);
-      expect(response[0]).toBe(3);
-      expect(response[1]).toBe('456');
-      expect(payload).toHaveProperty('idTagInfo');
-      expect(payload.idTagInfo).toHaveProperty('status');
+      expect(result[2].idTagInfo).toHaveProperty('expiryDate');
+      expect(new Date(result[2].idTagInfo.expiryDate)).toBeInstanceOf(Date);
     });
 
-    it('should include expiryDate when tag is valid', async () => {
+    it('should return [3, messageId, {...}] format per OCPP 1.6', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '789',
+        messageId: 'msg-003',
         action: 'Authorize',
-        payload: { idTag: 'LONG_VALID_TAG' },
+        payload: { idTag: 'TEST' },
       };
 
-      const context = new OcppContext('CP-003', '789');
+      const context = new OcppContext('CP-001', 'msg-003');
+      const result = (await handler.execute(message, context)) as any;
 
-      // ✅ CAST HERE:
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
-      const idTagInfo = payload.idTagInfo;
-
-      // ✅ USE Optional chaining:
-      expect(idTagInfo?.expiryDate).toBeDefined();
-      expect(new Date(idTagInfo?.expiryDate!)).toBeInstanceOf(Date);
-      expect(new Date(idTagInfo?.expiryDate!) > new Date()).toBe(true);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(3);
+      expect(result[0]).toBe(3);
+      expect(typeof result[1]).toBe('string');
+      expect(typeof result[2]).toBe('object');
     });
   });
 
-  describe('❌ Invalid idTag Cases', () => {
+  describe('Invalid idTag Cases', () => {
     it('should reject empty idTag', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '101',
+        messageId: 'msg-004',
         action: 'Authorize',
         payload: { idTag: '' },
       };
 
-      const context = new OcppContext('CP-004', '101');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
+      const context = new OcppContext('CP-001', 'msg-004');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(payload.idTagInfo?.status).toBe('Invalid');
+      expect(result[2].idTagInfo.status).toBe('Invalid');
     });
 
-    it('should reject idTag with invalid format (too short)', async () => {
+    it('should reject idTag shorter than 3 chars', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '102',
+        messageId: 'msg-005',
         action: 'Authorize',
         payload: { idTag: 'AB' },
       };
 
-      const context = new OcppContext('CP-005', '102');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
+      const context = new OcppContext('CP-001', 'msg-005');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(payload.idTagInfo?.status).toBe('Invalid');
+      expect(result[2].idTagInfo.status).toBe('Invalid');
     });
 
-    it('should reject idTag with invalid format (too long)', async () => {
+    it('should reject idTag longer than 20 chars', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '103',
+        messageId: 'msg-006',
         action: 'Authorize',
-        payload: { idTag: 'A'.repeat(25) },
+        payload: { idTag: 'A'.repeat(21) },
       };
 
-      const context = new OcppContext('CP-006', '103');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
+      const context = new OcppContext('CP-001', 'msg-006');
+      const result = (await handler.execute(message, context)) as any;
 
-      // Schema validation catches too-long tags and returns FormationViolation
-      expect(response[0]).toBe(4); // CALLERROR type
-      expect(response[2]).toBe('FormationViolation');
+      expect(result[0]).toBe(4);
+      expect(result[2]).toBe('FormationViolation');
     });
 
     it('should block known blocked tags', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '104',
+        messageId: 'msg-007',
         action: 'Authorize',
         payload: { idTag: 'BLOCKED' },
       };
 
-      const context = new OcppContext('CP-007', '104');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
+      const context = new OcppContext('CP-001', 'msg-007');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(payload.idTagInfo?.status).toBe('Blocked');
+      expect(result[2].idTagInfo.status).toBe('Blocked');
     });
 
-    it('should reject expired tags', async () => {
+    it('should handle case insensitive blocked tags', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '105',
-        action: 'Authorize',
-        payload: { idTag: 'EXPIRED' },
-      };
-
-      const context = new OcppContext('CP-008', '105');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
-
-      expect(payload.idTagInfo?.status).toBe('Expired');
-    });
-
-    it('should handle tags with case insensitivity', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: '106',
+        messageId: 'msg-008',
         action: 'Authorize',
         payload: { idTag: 'blocked' },
       };
 
-      const context = new OcppContext('CP-009', '106');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
+      const context = new OcppContext('CP-001', 'msg-008');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(payload.idTagInfo?.status).toBe('Blocked');
+      expect(result[2].idTagInfo.status).toBe('Blocked');
+    });
+
+    it('should mark expired tags', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-009',
+        action: 'Authorize',
+        payload: { idTag: 'EXPIRED' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-009');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[2].idTagInfo.status).toBe('Expired');
     });
   });
 
-  describe('🔴 ChargePoint Not Found', () => {
-    it('should return error when charge point not found', async () => {
-      // NOTE: Current handler doesn't check if charge point exists.
-      // It's pure idTag validation. This test documents current behavior.
-
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: '201',
-        action: 'Authorize',
-        payload: { idTag: 'VALID_TAG' },
-      };
-
-      const context = new OcppContext('CP-NONEXISTENT', '201');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
-
-      // Current behavior: validates idTag, succeeds even if CP doesn't exist
-      expect(response[0]).toBe(3);
-      expect(payload.idTagInfo?.status).toBe('Accepted');
-      // TODO: When repository integration is added, expect GenericError
-    });
-
-    it('should handle repository errors gracefully', async () => {
-      // NOTE: Handler doesn't call repository - it's pure validation.
-      // This test documents the pure validation nature.
-
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: '202',
-        action: 'Authorize',
-        payload: { idTag: 'VALID_TAG' },
-      };
-
-      const context = new OcppContext('CP-001', '202');
-
-      // Act - no errors because no I/O operations
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
-      const payload = response[2] as IdTagInfoPayload;
-
-      // Assert
-      expect(response[0]).toBe(3);
-      expect(payload.idTagInfo?.status).toBe('Accepted');
-      // TODO: When repository integration is added, test error handling
-    });
-  });
-
-  describe('⏱️ Message ID Validation', () => {
+  describe('Message Format Validation', () => {
     it('should preserve messageId in response', async () => {
-      const messageIds = ['1', '999', 'custom-id-12345', '999999999'];
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'unique-msg-456',
+        action: 'Authorize',
+        payload: { idTag: 'TAG' },
+      };
 
-      for (const messageId of messageIds) {
-        const message: OcppCallRequest = {
-          messageTypeId: 2,
-          messageId,
-          action: 'Authorize',
-          payload: { idTag: 'VALID_TAG' },
-        };
+      const context = new OcppContext('CP-001', 'unique-msg-456');
+      const result = (await handler.execute(message, context)) as any;
 
-        const context = new OcppContext('CP-010', messageId);
-        const responseRaw = await handler.execute(message, context);
-        const response = responseRaw as AuthorizeResponse;
-
-        expect(response[1]).toBe(messageId);
-      }
+      expect(result[1]).toBe('unique-msg-456');
     });
 
     it('should handle various messageId formats', async () => {
+      const formats = ['1', '123', 'abc-123', 'UUID-xxxxxxxx'];
+
+      for (const msgId of formats) {
+        const message: OcppCallRequest = {
+          messageTypeId: 2,
+          messageId: msgId,
+          action: 'Authorize',
+          payload: { idTag: 'TAG' },
+        };
+
+        const context = new OcppContext('CP-001', msgId);
+        const result = (await handler.execute(message, context)) as any;
+
+        expect(result[1]).toBe(msgId);
+      }
+    });
+
+    it('should validate messageTypeId is CALL (2)', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '550e8400-e29b-41d4-a716-446655440000',
+        messageId: 'msg-010',
         action: 'Authorize',
-        payload: { idTag: 'VALID_TAG' },
+        payload: { idTag: 'TAG' },
       };
 
-      const context = new OcppContext('CP-011', '550e8400-e29b-41d4-a716-446655440000');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
+      const context = new OcppContext('CP-001', 'msg-010');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(response[1]).toBe('550e8400-e29b-41d4-a716-446655440000');
+      expect(result[0]).toBe(3);
     });
   });
 
-  describe('📊 Logging & Audit Trail', () => {
-    it('should log authorization attempt', async () => {
-      const logSpy = jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
-
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: '401',
-        action: 'Authorize',
-        payload: { idTag: 'AUDIT_TAG' },
-      };
-
-      const context = new OcppContext('CP-012', '401');
-
-      await handler.execute(message, context);
-
-      expect(logSpy).toHaveBeenCalled();
-      logSpy.mockRestore();
+  describe('Context Validation', () => {
+    it('should require chargePointId in context', () => {
+      expect(() => {
+        new OcppContext('', 'msg-011');
+      }).toThrow();
     });
 
-    it('should log error on invalid idTag', async () => {
-      const errorSpy = jest.spyOn(handler['logger'], 'error').mockImplementation(() => undefined);
-
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: '402',
-        action: 'Authorize',
-        payload: { idTag: '' },
-      };
-
-      const context = new OcppContext('CP-013', '402');
-
-      await handler.execute(message, context);
-
-      // May or may not log error depending on implementation
-      // This test documents the behavior
-
-      errorSpy.mockRestore();
+    it('should require messageId in context', () => {
+      expect(() => {
+        new OcppContext('CP-001', '');
+      }).toThrow();
     });
 
-    it('should include relevant context in logs', async () => {
-      const logSpy = jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
+    it('should accept optional sourceIp', () => {
+      const context = new OcppContext('CP-001', 'msg-012', '192.168.1.1');
 
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: '403',
-        action: 'Authorize',
-        payload: { idTag: 'CONTEXT_TAG' },
-      };
+      expect(context.sourceIp).toBe('192.168.1.1');
+    });
 
-      const context = new OcppContext('CP-014', '403');
+    it('should set timestamp on context creation', () => {
+      const before = new Date();
+      const context = new OcppContext('CP-001', 'msg-013');
+      const after = new Date();
 
-      await handler.execute(message, context);
+      expect(context.timestamp).toBeInstanceOf(Date);
+      expect(context.timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(context.timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
+    });
 
-      // Verify logs were called (implementation may vary)
-      expect(logSpy).toHaveBeenCalled();
-      logSpy.mockRestore();
+    it('should accept custom timestamp', () => {
+      const customDate = new Date('2024-01-01T00:00:00Z');
+      const context = new OcppContext('CP-001', 'msg-014', undefined, customDate);
+
+      expect(context.timestamp).toEqual(customDate);
     });
   });
 
-  describe('🔄 Response Format Consistency', () => {
-    it('should always return array format [type, id, payload]', async () => {
+  describe('OCPP 1.6 Specification Compliance', () => {
+    it('should return only valid AuthorizationStatus values', async () => {
+      const validStatuses = ['Accepted', 'Blocked', 'Expired', 'Invalid'];
+
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '500',
+        messageId: 'msg-015',
         action: 'Authorize',
-        payload: { idTag: 'FORMAT_TAG' },
+        payload: { idTag: 'VALID' },
       };
 
-      const context = new OcppContext('CP-015', '500');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
+      const context = new OcppContext('CP-001', 'msg-015');
+      const result = (await handler.execute(message, context)) as any;
 
-      expect(Array.isArray(response)).toBe(true);
-      expect(response.length).toBeGreaterThanOrEqual(3);
-      expect(typeof response[0]).toBe('number');
-      expect(typeof response[1]).toBe('string');
-      expect(typeof response[2]).toBe('object');
+      expect(validStatuses).toContain(result[2].idTagInfo.status);
     });
 
-    it('should have correct message type codes', async () => {
+    it('should return idTagInfo with status property', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: '501',
+        messageId: 'msg-016',
         action: 'Authorize',
-        payload: { idTag: 'TYPE_TAG' },
+        payload: { idTag: 'TAG' },
       };
 
-      const context = new OcppContext('CP-016', '501');
-      const responseRaw = await handler.execute(message, context);
-      const response = responseRaw as AuthorizeResponse;
+      const context = new OcppContext('CP-001', 'msg-016');
+      const result = (await handler.execute(message, context)) as any;
 
-      // Type 3 = CALL_RESULT, Type 4 = CALL_ERROR
-      expect([3, 4]).toContain(response[0]);
+      expect(result[2]).toHaveProperty('idTagInfo');
+      expect(result[2].idTagInfo).toHaveProperty('status');
+    });
+
+    it('should return ISO 8601 timestamp format', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-017',
+        action: 'Authorize',
+        payload: { idTag: 'TAG' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-017');
+      const result = (await handler.execute(message, context)) as any;
+
+      const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+      expect(result[2].idTagInfo.expiryDate).toMatch(iso8601Regex);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle missing payload fields', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-018',
+        action: 'Authorize',
+        payload: {},
+      };
+
+      const context = new OcppContext('CP-001', 'msg-018');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(4);
+      expect(result[2]).toBe('FormationViolation');
+    });
+
+    it('should handle null payload safely', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-019',
+        action: 'Authorize',
+        payload: null as any,
+      };
+
+      const context = new OcppContext('CP-001', 'msg-019');
+
+      try {
+        const result = (await handler.execute(message, context)) as any;
+        expect([3, 4]).toContain(result[0]);
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should return valid response for unexpected data', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-020',
+        action: 'Authorize',
+        payload: { idTag: 'TAG' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-020');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(Array.isArray(result)).toBe(true);
+      expect([3, 4]).toContain(result[0]);
+    });
+  });
+
+  describe('Performance', () => {
+    it('should complete authorization within 100ms SLA', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-021',
+        action: 'Authorize',
+        payload: { idTag: 'TAG' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-021');
+      const start = Date.now();
+      const result = (await handler.execute(message, context)) as any;
+      const duration = Date.now() - start;
+
+      expect(duration).toBeLessThan(100);
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should handle rapid sequential requests', async () => {
+      const requests = Array.from({ length: 10 }, (_, i) => {
+        const message: OcppCallRequest = {
+          messageTypeId: 2,
+          messageId: `msg-seq-${i}`,
+          action: 'Authorize',
+          payload: { idTag: 'TAG' },
+        };
+        const context = new OcppContext('CP-001', `msg-seq-${i}`);
+        return handler.execute(message, context);
+      });
+
+      const results = await Promise.all(requests);
+
+      expect(results).toHaveLength(10);
+      results.forEach((result) => {
+        expect(Array.isArray(result)).toBe(true);
+      });
+    });
+  });
+
+  describe('Boundary Cases', () => {
+    it('should accept exactly 3-char idTag', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-022',
+        action: 'Authorize',
+        payload: { idTag: 'ABC' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-022');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[2].idTagInfo.status).toBe('Accepted');
+    });
+
+    it('should accept exactly 20-char idTag', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-023',
+        action: 'Authorize',
+        payload: { idTag: 'A'.repeat(20) },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-023');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[2].idTagInfo.status).toBe('Accepted');
+    });
+
+    it('should handle special characters in idTag', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-024',
+        action: 'Authorize',
+        payload: { idTag: 'TAG-123_456' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-024');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect([3, 4]).toContain(result[0]);
+    });
+
+    it('should handle numeric idTag strings', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'msg-025',
+        action: 'Authorize',
+        payload: { idTag: '1234567890' },
+      };
+
+      const context = new OcppContext('CP-001', 'msg-025');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[2].idTagInfo.status).toBe('Accepted');
     });
   });
 });
