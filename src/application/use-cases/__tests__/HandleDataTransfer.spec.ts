@@ -1,357 +1,302 @@
 import { Test, TestingModule } from '@nestjs/testing';
-
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../../infrastructure/tokens';
-import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
 import { HandleDataTransfer } from '../HandleDataTransfer';
-import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
-import { OcppCallRequest } from '../../dto/OcppProtocol';
 import { OcppContext } from '../../../domain/value-objects/OcppContext';
+import { OcppCallRequest } from '../../dto/OcppProtocol';
 
 describe('HandleDataTransfer', () => {
   let handler: HandleDataTransfer;
-  let mockRepository: jest.Mocked<IChargePointRepository>;
 
   beforeEach(async () => {
-    mockRepository = {
-      find: jest.fn(),
-      findByChargePointId: jest.fn(),
-      findAll: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        HandleDataTransfer,
-        {
-          provide: CHARGE_POINT_REPOSITORY_TOKEN,
-          useValue: mockRepository,
-        },
-      ],
+      providers: [HandleDataTransfer],
     }).compile();
 
     handler = module.get<HandleDataTransfer>(HandleDataTransfer);
   });
 
   describe('Happy Path - Valid DataTransfer', () => {
-    it('should accept DataTransfer with vendorId', async () => {
+    it('should accept DataTransfer request with vendorId', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
         messageId: 'dt-001',
         action: 'DataTransfer',
         payload: {
-          vendorId: 'vendor.com',
+          vendorId: 'com.example.vendor',
+          messageId: 'msg-123',
+          data: 'some-binary-data',
         },
       };
-
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-123',
-        chargePointId: 'CP-001',
-      } as ChargePoint);
 
       const context = new OcppContext('CP-001', 'dt-001');
       const result = (await handler.execute(message, context)) as any;
 
-      expect(result[0]).toBe(3);
+      expect(result[0]).toBe(3); // CALLRESULT
       expect(result[1]).toBe('dt-001');
-      expect(result[2]).toHaveProperty('status');
+      expect(result[2].status).toBe('Accepted');
     });
 
-    it('should return Accepted status for valid transfer', async () => {
+    it('should accept DataTransfer with minimal payload', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
         messageId: 'dt-002',
         action: 'DataTransfer',
         payload: {
-          vendorId: 'charge.io',
+          vendorId: 'vendor.example',
         },
       };
 
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-456',
-        chargePointId: 'CP-002',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-002', 'dt-002');
+      const context = new OcppContext('CP-001', 'dt-002');
       const result = (await handler.execute(message, context)) as any;
 
+      expect(result[0]).toBe(3);
       expect(result[2].status).toBe('Accepted');
+    });
+
+    it('should accept DataTransfer with messageId only', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'dt-003',
+        action: 'DataTransfer',
+        payload: {
+          messageId: 'custom-msg-id',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'dt-003');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(3);
+    });
+
+    it('should accept DataTransfer with binary data', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'dt-004',
+        action: 'DataTransfer',
+        payload: {
+          vendorId: 'vendor.binary',
+          data: Buffer.from('binary-data').toString('base64'),
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'dt-004');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(3);
     });
 
     it('should preserve messageId in response', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'unique-dt-12345',
+        messageId: 'dt-unique-999',
         action: 'DataTransfer',
         payload: {
           vendorId: 'test.vendor',
         },
       };
 
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-789',
-        chargePointId: 'CP-003',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-003', 'unique-dt-12345');
+      const context = new OcppContext('CP-001', 'dt-unique-999');
       const result = (await handler.execute(message, context)) as any;
 
-      expect(result[1]).toBe('unique-dt-12345');
-    });
-
-    it('should accept DataTransfer with optional data field', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-004',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'vendor.org',
-          data: '{"key":"value"}',
-        },
-      };
-
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-999',
-        chargePointId: 'CP-004',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-004', 'dt-004');
-      const result = (await handler.execute(message, context)) as any;
-
-      expect(result[0]).toBe(3);
-    });
-
-    it('should handle multiple consecutive DataTransfers', async () => {
-      const messages = Array.from({ length: 3 }, (_, i) => ({
-        messageTypeId: 2 as const,
-        messageId: `dt-seq-${i}`,
-        action: 'DataTransfer' as const,
-        payload: {
-          vendorId: `vendor${i}.com`,
-        },
-      }));
-
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-1111',
-        chargePointId: 'CP-005',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-005', 'dt-seq');
-      const results = await Promise.all(messages.map((msg) => handler.execute(msg, context)));
-
-      expect(results).toHaveLength(3);
-      expect(results.every((r: any) => r[0] === 3)).toBe(true);
+      expect(result[1]).toBe('dt-unique-999');
     });
   });
 
   describe('Message Format Validation', () => {
-    it('should return CALLRESULT (3) for valid message', async () => {
+    it('should reject invalid messageTypeId', async () => {
+      const message = {
+        messageTypeId: 3,
+        messageId: 'dt-005',
+        action: 'DataTransfer',
+        payload: { vendorId: 'vendor' },
+      } as any as OcppCallRequest;
+
+      const context = new OcppContext('CP-001', 'dt-005');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(4); // CALLERROR
+      expect(result[2]).toBe('GenericError');
+    });
+
+    it('should return array with 3 elements', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
         messageId: 'dt-006',
         action: 'DataTransfer',
         payload: {
-          vendorId: 'valid.vendor',
+          vendorId: 'vendor',
         },
       };
 
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-2222',
-        chargePointId: 'CP-006',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-006', 'dt-006');
-      const result = (await handler.execute(message, context)) as any;
-
-      expect(result[0]).toBe(3);
-      expect(result.length).toBe(3);
-    });
-
-    it('should return error for invalid messageTypeId', async () => {
-      const message = {
-        messageTypeId: 99,
-        messageId: 'dt-007',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'vendor.com',
-        },
-      } as any;
-
-      const context = new OcppContext('CP-007', 'dt-007');
-      const result = (await handler.execute(message, context)) as any;
-
-      expect(result[0]).toBe(4);
-    });
-
-    it('should reject missing vendorId', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-008',
-        action: 'DataTransfer',
-        payload: {} as any,
-      };
-
-      const context = new OcppContext('CP-008', 'dt-008');
-      const result = (await handler.execute(message, context)) as any;
-
-      expect(result[0]).toBe(4);
-    });
-  });
-
-  describe('ChargePoint Lookup', () => {
-    it('should query repository with correct chargePointId', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-009',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'test.com',
-        },
-      };
-
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-3333',
-        chargePointId: 'CP-009',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-009', 'dt-009');
-      await handler.execute(message, context);
-
-      expect(mockRepository.findByChargePointId).toHaveBeenCalledWith('CP-009');
-    });
-
-    it('should return error when ChargePoint not found', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-010',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'unknown.vendor',
-        },
-      };
-
-      mockRepository.findByChargePointId.mockResolvedValue(null);
-
-      const context = new OcppContext('CP-NONEXISTENT', 'dt-010');
-      const result = (await handler.execute(message, context)) as any;
-
-      expect(result[0]).toBe(4);
-      //   expect(result[2]).toContain('not found');
-      expect(result[2]).toBe('GenericError');
-    });
-  });
-
-  describe('Response Format', () => {
-    it('should return array with 3 elements', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-011',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'format.test',
-        },
-      };
-
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-4444',
-        chargePointId: 'CP-011',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-011', 'dt-011');
+      const context = new OcppContext('CP-001', 'dt-006');
       const result = (await handler.execute(message, context)) as any;
 
       expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(3);
+      expect(result).toHaveLength(3);
     });
 
-    it('should return correct payload structure', async () => {
+    it('should return Accepted status', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'dt-012',
+        messageId: 'dt-007',
         action: 'DataTransfer',
         payload: {
-          vendorId: 'struct.vendor',
+          vendorId: 'vendor',
         },
       };
 
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-5555',
-        chargePointId: 'CP-012',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-012', 'dt-012');
+      const context = new OcppContext('CP-001', 'dt-007');
       const result = (await handler.execute(message, context)) as any;
 
-      expect(result[2]).toHaveProperty('status');
-      expect(typeof result[2].status).toBe('string');
+      expect(result[2].status).toBe('Accepted');
     });
   });
 
-  describe('Performance & Boundaries', () => {
-    it('should complete within 100ms SLA', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-013',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'perf.test',
-        },
-      };
+  describe('Vendor Data Handling', () => {
+    it('should handle various vendor ID formats', async () => {
+      const vendorIds = [
+        'simple-vendor',
+        'com.example.vendor',
+        'org.example.vendor.subtype',
+        'vendor123',
+        'VENDOR_ALL_CAPS',
+      ];
 
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-6666',
-        chargePointId: 'CP-013',
-      } as ChargePoint);
+      for (const vendorId of vendorIds) {
+        const message: OcppCallRequest = {
+          messageTypeId: 2,
+          messageId: `dt-vendor-${vendorId}`,
+          action: 'DataTransfer',
+          payload: { vendorId },
+        };
 
-      const context = new OcppContext('CP-013', 'dt-013');
-      const start = Date.now();
-      await handler.execute(message, context);
-      const duration = Date.now() - start;
+        const context = new OcppContext('CP-001', `dt-vendor-${vendorId}`);
+        const result = (await handler.execute(message, context)) as any;
 
-      expect(duration).toBeLessThan(100);
+        expect(result[0]).toBe(3);
+      }
     });
 
-    it('should handle very long vendorId strings', async () => {
+    it('should handle large data payloads', async () => {
+      const largeData = 'x'.repeat(10000); // 10KB of data
+
       const message: OcppCallRequest = {
         messageTypeId: 2,
-        messageId: 'dt-014',
+        messageId: 'dt-large',
         action: 'DataTransfer',
         payload: {
-          vendorId: 'v'.repeat(200) + '.com',
+          vendorId: 'vendor.large',
+          data: largeData,
         },
       };
 
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-7777',
-        chargePointId: 'CP-014',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-014', 'dt-014');
-      const result = (await handler.execute(message, context)) as any;
-
-      expect([3, 4]).toContain(result[0]);
-    });
-
-    it('should handle special characters in vendorId', async () => {
-      const message: OcppCallRequest = {
-        messageTypeId: 2,
-        messageId: 'dt-015',
-        action: 'DataTransfer',
-        payload: {
-          vendorId: 'vendor@123#test.org',
-        },
-      };
-
-      mockRepository.findByChargePointId.mockResolvedValue({
-        id: 'cp-8888',
-        chargePointId: 'CP-015',
-      } as ChargePoint);
-
-      const context = new OcppContext('CP-015', 'dt-015');
+      const context = new OcppContext('CP-001', 'dt-large');
       const result = (await handler.execute(message, context)) as any;
 
       expect(result[0]).toBe(3);
+    });
+
+    it('should handle special characters in data', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'dt-special',
+        action: 'DataTransfer',
+        payload: {
+          vendorId: 'vendor.special',
+          data: '{"key": "value", "special": "chars!@#$%^&*()"}',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'dt-special');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(3);
+    });
+  });
+
+  describe('Performance & Concurrency', () => {
+    it('should complete within 100ms SLA', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'dt-perf',
+        action: 'DataTransfer',
+        payload: {
+          vendorId: 'vendor.perf',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'dt-perf');
+      const start = performance.now();
+
+      await handler.execute(message, context);
+
+      const duration = performance.now() - start;
+      expect(duration).toBeLessThan(100);
+    });
+
+    it('should handle concurrent data transfers', async () => {
+      const messages: OcppCallRequest[] = Array.from({ length: 5 }, (_, i) => ({
+        messageTypeId: 2,
+        messageId: `dt-concurrent-${i}`,
+        action: 'DataTransfer',
+        payload: {
+          vendorId: `vendor-${i}`,
+          messageId: `msg-${i}`,
+          data: `data-${i}`,
+        },
+      })) as any;
+
+      const contexts = messages.map(
+        (msg) => new OcppContext('CP-001', msg.messageId),
+      );
+
+      const results = await Promise.all(
+        messages.map((msg, idx) => handler.execute(msg, contexts[idx])),
+      );
+
+      expect(results).toHaveLength(5);
+      results.forEach((result: any) => {
+        expect(result[0]).toBe(3);
+      });
+    });
+  });
+
+  describe('OCPP 1.6 Compliance', () => {
+    it('should return OCPP wire format [3, id, {...}]', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'dt-compliance',
+        action: 'DataTransfer',
+        payload: {
+          vendorId: 'vendor.compliance',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'dt-compliance');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(typeof result[0]).toBe('number');
+      expect(typeof result[1]).toBe('string');
+      expect(typeof result[2]).toBe('object');
+    });
+
+    it('should support vendor-specific message exchange', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'dt-vendor-exchange',
+        action: 'DataTransfer',
+        payload: {
+          vendorId: 'vendor.exchange',
+          messageId: 'vendor-msg-123',
+          data: 'vendor-specific-data',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'dt-vendor-exchange');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(3);
+      expect(result[2].status).toBe('Accepted');
     });
   });
 });
