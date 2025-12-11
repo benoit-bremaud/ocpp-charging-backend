@@ -74,3 +74,10 @@ export function buildInternalError(messageId: string, description: string): unkn
   const response = createCallError(messageId, 'InternalError', description);
   return serializeOcppMessage(response);
 }
+
+export function buildDataTransferResponse(
+  messageId: string,
+  status: 'Accepted' | 'Rejected' | 'UnknownVendorId' | 'UnknownMessageTypeId',
+): unknown[] {
+  return [3, messageId, { status }];
+}
