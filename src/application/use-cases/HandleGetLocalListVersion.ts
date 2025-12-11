@@ -10,17 +10,12 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleGetLocalListVersion {
   private readonly logger = new Logger(HandleGetLocalListVersion.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     if (message.messageTypeId !== 2) {
       return [4, message.messageId, 'GenericError', 'Invalid messageTypeId'];
     }
 
-    this.logger.debug(
-      `[${context.chargePointId}] GetLocalListVersion requested`,
-    );
+    this.logger.debug(`[${context.chargePointId}] GetLocalListVersion requested`);
 
     return [
       3,

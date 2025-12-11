@@ -10,10 +10,7 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleSendLocalList {
   private readonly logger = new Logger(HandleSendLocalList.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     if (message.messageTypeId !== 2) {
       return [4, message.messageId, 'GenericError', 'Invalid messageTypeId'];
     }
@@ -24,9 +21,7 @@ export class HandleSendLocalList {
       updateType?: string;
     };
 
-    this.logger.debug(
-      `[${context.chargePointId}] SendLocalList - Version: ${payload.listVersion}`,
-    );
+    this.logger.debug(`[${context.chargePointId}] SendLocalList - Version: ${payload.listVersion}`);
 
     return [
       3,

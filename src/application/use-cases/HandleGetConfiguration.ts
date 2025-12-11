@@ -10,10 +10,7 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleGetConfiguration {
   private readonly logger = new Logger(HandleGetConfiguration.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     if (message.messageTypeId !== 2) {
       return [4, message.messageId, 'GenericError', 'Invalid messageTypeId'];
     }

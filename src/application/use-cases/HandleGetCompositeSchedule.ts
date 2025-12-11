@@ -10,20 +10,12 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleGetCompositeSchedule {
   private readonly logger = new Logger(HandleGetCompositeSchedule.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     if (message.messageTypeId !== 2) {
       this.logger.error(
         `GetCompositeSchedule expects CALL messageTypeId 2, got ${message.messageTypeId}`,
       );
-      return [
-        4,
-        message.messageId,
-        'GenericError',
-        'Invalid messageTypeId',
-      ];
+      return [4, message.messageId, 'GenericError', 'Invalid messageTypeId'];
     }
 
     const payload = message.payload as {

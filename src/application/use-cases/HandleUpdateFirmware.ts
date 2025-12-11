@@ -10,10 +10,7 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleUpdateFirmware {
   private readonly logger = new Logger(HandleUpdateFirmware.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     if (message.messageTypeId !== 2) {
       return [4, message.messageId, 'GenericError', 'Invalid messageTypeId'];
     }
@@ -26,14 +23,8 @@ export class HandleUpdateFirmware {
       retryInterval?: number;
     };
 
-    this.logger.debug(
-      `[${context.chargePointId}] UpdateFirmware - Location: ${payload.location}`,
-    );
+    this.logger.debug(`[${context.chargePointId}] UpdateFirmware - Location: ${payload.location}`);
 
-    return [
-      3,
-      message.messageId,
-      {},
-    ];
+    return [3, message.messageId, {}];
   }
 }

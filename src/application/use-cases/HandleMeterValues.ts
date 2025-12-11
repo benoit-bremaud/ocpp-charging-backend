@@ -10,15 +10,10 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleMeterValues {
   private readonly logger = new Logger(HandleMeterValues.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
-      this.logger.error(
-        `MeterValues expects CALL messageTypeId 2, got ${message.messageTypeId}`,
-      );
+      this.logger.error(`MeterValues expects CALL messageTypeId 2, got ${message.messageTypeId}`);
       return [
         4, // CALLERROR
         message.messageId,

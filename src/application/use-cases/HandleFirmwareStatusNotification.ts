@@ -8,14 +8,9 @@ type OcppResponse = OcppCallResult | OcppCallError;
 
 @Injectable()
 export class HandleFirmwareStatusNotification {
-  private readonly logger = new Logger(
-    HandleFirmwareStatusNotification.name,
-  );
+  private readonly logger = new Logger(HandleFirmwareStatusNotification.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
       this.logger.error(

@@ -10,10 +10,7 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleStopTransaction {
   private readonly logger = new Logger(HandleStopTransaction.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
       this.logger.error(

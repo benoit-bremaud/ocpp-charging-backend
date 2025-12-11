@@ -10,15 +10,10 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleReset {
   private readonly logger = new Logger(HandleReset.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
-      this.logger.error(
-        `Reset expects CALL messageTypeId 2, got ${message.messageTypeId}`,
-      );
+      this.logger.error(`Reset expects CALL messageTypeId 2, got ${message.messageTypeId}`);
       return [
         4, // CALLERROR
         message.messageId,
@@ -31,9 +26,7 @@ export class HandleReset {
       type?: string;
     };
 
-    this.logger.debug(
-      `[${context.chargePointId}] Reset - Type: ${payload.type}`,
-    );
+    this.logger.debug(`[${context.chargePointId}] Reset - Type: ${payload.type}`);
 
     // Return CALLRESULT with Accepted status
     return [

@@ -10,15 +10,10 @@ type OcppResponse = OcppCallResult | OcppCallError;
 export class HandleHeartbeat {
   private readonly logger = new Logger(HandleHeartbeat.name);
 
-  async execute(
-    message: OcppCallRequest,
-    context: OcppContext,
-  ): Promise<OcppResponse> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<OcppResponse> {
     // Validate CALL messageTypeId
     if (message.messageTypeId !== 2) {
-      this.logger.error(
-        `Heartbeat expects CALL messageTypeId 2, got ${message.messageTypeId}`,
-      );
+      this.logger.error(`Heartbeat expects CALL messageTypeId 2, got ${message.messageTypeId}`);
       return [
         4, // CALLERROR
         message.messageId,
@@ -28,9 +23,7 @@ export class HandleHeartbeat {
     }
 
     const currentTime = new Date().toISOString();
-    this.logger.debug(
-      `[${context.chargePointId}] Heartbeat received at ${currentTime}`,
-    );
+    this.logger.debug(`[${context.chargePointId}] Heartbeat received at ${currentTime}`);
 
     // Return CALLRESULT with current server time
     return [
