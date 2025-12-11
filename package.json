@@ -20,7 +20,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:unit": "jest --testPathPatterns='unit' --testPathIgnorePatterns='integration|e2e'",
     "test:integration": "jest --testPathPatterns='integration'",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "jest --config ./jest-e2e.json",
     "test:e2e:init": "bash scripts/init-e2e-db.sh",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "typeorm": "typeorm-ts-node-commonjs -d src/infrastructure/database/typeorm.cli.ts",
