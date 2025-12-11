@@ -22,7 +22,7 @@ export class HandleDataTransfer {
     private readonly chargePointRepository: IChargePointRepository,
   ) {}
 
-  async execute(message: OcppCallRequest, context: OcppContext): Promise<any> {
+  async execute(message: OcppCallRequest, context: OcppContext): Promise<unknown[]> {
     // Validate messageTypeId is CALL (2)
     if (message.messageTypeId !== 2) {
       this.logger.error('DataTransfer expects CALL (messageTypeId 2)');

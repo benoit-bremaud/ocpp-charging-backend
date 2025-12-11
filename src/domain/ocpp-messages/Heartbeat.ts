@@ -13,7 +13,7 @@ export interface HeartbeatResponse {
 export class HeartbeatMessage {
   constructor(
     public request: HeartbeatRequest = {},
-    public response?: HeartbeatResponse
+    public response?: HeartbeatResponse,
   ) {}
 
   static fromOcppPayload(payload: unknown): HeartbeatRequest {

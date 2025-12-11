@@ -1,15 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { buildGenericError, buildFormationViolation } from '../dto/OcppResponseBuilders';
 
 import { OcppContext } from '../../domain/value-objects/OcppContext';
 import { OcppSchema } from '../../domain/value-objects/OcppSchema';
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
 import { OcppCallRequest } from '../dto/OcppProtocol';
-import {
-  buildGenericError,
-  buildFormationViolation,
-  buildDataTransferResponse,
-} from '../dto/OcppResponseBuilders';
 
 /**
  * Use-Case: Handle StartTransaction (OCPP 1.6 Compliant)
@@ -50,7 +46,7 @@ export class HandleStartTransaction {
       return buildGenericError(context.messageId, `ChargePoint ${context.chargePointId} not found`);
     }
 
-    // Extract payload
+    // ✅ Type the payload
     const payload = message.payload as any;
     const connectorId = payload.connectorId as number;
     const idTag = payload.idTag as string;

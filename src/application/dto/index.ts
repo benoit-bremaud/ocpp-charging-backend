@@ -2,7 +2,6 @@
 
 // Inputs
 export * from './input/AuthorizeInput';
-export * from './input/BootNotificationInput';
 export * from './input/CancelReservationInput';
 export * from './input/ChangeAvailabilityInput';
 export * from './input/ChangeConfigurationInput';
