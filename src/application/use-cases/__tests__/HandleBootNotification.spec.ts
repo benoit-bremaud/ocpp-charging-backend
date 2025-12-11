@@ -399,14 +399,14 @@ describe('HandleBootNotification', () => {
   });
 
   describe('Boundary Cases', () => {
-    it('should handle vendor string with spaces', async () => {
+    it('should reject vendor string with spaces if schema forbids it', async () => {
       const message: OcppCallRequest = {
         messageTypeId: 2,
         messageId: 'boot-017',
         action: 'BootNotification',
         payload: {
-          chargePointVendor: 'Tesla Inc Company Ltd',
-          chargePointModel: 'Super Model X',
+          chargePointVendor: 'Tesla Inc Company Ltd', 
+          chargePointModel: 'Super Model X',          
         },
       };
 
@@ -418,8 +418,10 @@ describe('HandleBootNotification', () => {
       const context = new OcppContext('CP-017', 'boot-017');
       const result = (await handler.execute(message, context)) as any;
 
-      expect(result[0]).toBe(3);
+      expect(result[0]).toBe(4);
+      expect(result[2]).toBe('FormationViolation');
     });
+
 
     it('should handle very long vendor/model strings', async () => {
       const message: OcppCallRequest = {
