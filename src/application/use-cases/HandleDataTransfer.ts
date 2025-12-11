@@ -32,22 +32,14 @@ export class HandleDataTransfer {
     // Basic validation - vendorId is required
     if (!message.payload || !message.payload.vendorId) {
       this.logger.warn('DataTransfer: missing required vendorId');
-      return buildFormationViolation(
-        context.messageId,
-        'Missing required field: vendorId',
-      );
+      return buildFormationViolation(context.messageId, 'Missing required field: vendorId');
     }
 
     // Lookup ChargePoint
-    const chargePoint = await this.chargePointRepository.findByChargePointId(
-      context.chargePointId,
-    );
+    const chargePoint = await this.chargePointRepository.findByChargePointId(context.chargePointId);
     if (!chargePoint) {
       this.logger.warn(`ChargePoint not found: ${context.chargePointId}`);
-      return buildGenericError(
-        context.messageId,
-        `ChargePoint ${context.chargePointId} not found`,
-      );
+      return buildGenericError(context.messageId, `ChargePoint ${context.chargePointId} not found`);
     }
 
     this.logger.log(
