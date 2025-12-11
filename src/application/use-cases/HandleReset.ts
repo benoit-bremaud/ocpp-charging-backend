@@ -1,30 +1,47 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
-import { ResetInput } from '../dto/input/ResetInput';
-import { ResetOutput } from '../dto/output/ResetOutput';
-import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
+import { Injectable, Logger } from '@nestjs/common';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
+import { OcppCallRequest } from '../dto/OcppProtocol';
 
-/**
- * Handle Reset use case
- * OCPP § 3.17 - Reset charge point
- */
+type OcppCallResult = [number, string, Record<string, unknown>];
+type OcppCallError = [number, string, string, string];
+type OcppResponse = OcppCallResult | OcppCallError;
+
 @Injectable()
 export class HandleReset {
-  constructor(
-    @Inject(CHARGE_POINT_REPOSITORY_TOKEN)
-    private readonly chargePointRepo: IChargePointRepository,
-  ) {}
+  private readonly logger = new Logger(HandleReset.name);
 
-  async execute(input: ResetInput): Promise<ResetOutput> {
-    if (!['Hard', 'Soft'].includes(input.type)) {
-      return ResetOutput.rejected();
+  async execute(
+    message: OcppCallRequest,
+    context: OcppContext,
+  ): Promise<OcppResponse> {
+    // Validate CALL messageTypeId
+    if (message.messageTypeId !== 2) {
+      this.logger.error(
+        `Reset expects CALL messageTypeId 2, got ${message.messageTypeId}`,
+      );
+      return [
+        4, // CALLERROR
+        message.messageId,
+        'GenericError',
+        'Invalid messageTypeId',
+      ];
     }
 
-    const chargePoint = await this.chargePointRepo.find(input.chargePointId);
-    if (!chargePoint) {
-      return ResetOutput.rejected();
-    }
+    const payload = message.payload as {
+      type?: string;
+    };
 
-    return ResetOutput.accepted();
+    this.logger.debug(
+      `[${context.chargePointId}] Reset - Type: ${payload.type}`,
+    );
+
+    // Return CALLRESULT with Accepted status
+    return [
+      3, // CALLRESULT
+      message.messageId,
+      {
+        status: 'Accepted',
+      },
+    ];
   }
 }

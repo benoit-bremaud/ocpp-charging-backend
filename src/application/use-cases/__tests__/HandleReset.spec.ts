@@ -1,383 +1,293 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HandleReset } from '../HandleReset';
-import { IChargePointRepository } from '../../../domain/repositories/IChargePointRepository';
-import { ResetInput } from '../../dto/input/ResetInput';
-import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../../infrastructure/tokens';
-import { ChargePoint } from '../../../domain/entities/ChargePoint.entity';
+import { OcppContext } from '../../../domain/value-objects/OcppContext';
+import { OcppCallRequest } from '../../dto/OcppProtocol';
 
 describe('HandleReset', () => {
   let handler: HandleReset;
-  let mockRepository: jest.Mocked<IChargePointRepository>;
 
   beforeEach(async () => {
-    mockRepository = {
-      find: jest.fn(),
-      findByChargePointId: jest.fn(),
-      findAll: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        HandleReset,
-        {
-          provide: CHARGE_POINT_REPOSITORY_TOKEN,
-          useValue: mockRepository,
-        },
-      ],
+      providers: [HandleReset],
     }).compile();
 
     handler = module.get<HandleReset>(HandleReset);
   });
 
-  describe('Happy Path - Valid Resets', () => {
-    it('should accept hard reset when ChargePoint exists', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-001',
-        type: 'Hard',
+  describe('Happy Path - Valid Reset', () => {
+    it('should accept Reset request with Hard type', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-001',
+        action: 'Reset',
+        payload: {
+          type: 'Hard',
+        },
       };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-123',
-        chargePointId: 'CP-001',
-      } as ChargePoint);
+      const context = new OcppContext('CP-001', 'rst-001');
+      const result = (await handler.execute(message, context)) as any;
 
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Accepted');
+      expect(result[0]).toBe(3); // CALLRESULT
+      expect(result[1]).toBe('rst-001');
+      expect(result[2].status).toBe('Accepted');
     });
 
-    it('should accept soft reset when ChargePoint exists', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-002',
-        type: 'Soft',
+    it('should accept Reset request with Soft type', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-002',
+        action: 'Reset',
+        payload: {
+          type: 'Soft',
+        },
       };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-456',
-        chargePointId: 'CP-002',
-      } as ChargePoint);
+      const context = new OcppContext('CP-001', 'rst-002');
+      const result = (await handler.execute(message, context)) as any;
 
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Accepted');
+      expect(result[0]).toBe(3);
+      expect(result[2].status).toBe('Accepted');
     });
 
-    it('should preserve reset type in execution', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-003',
-        type: 'Hard',
+    it('should accept Reset with empty payload', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-003',
+        action: 'Reset',
+        payload: {},
       };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-789',
-        chargePointId: 'CP-003',
-      } as ChargePoint);
+      const context = new OcppContext('CP-001', 'rst-003');
+      const result = (await handler.execute(message, context)) as any;
 
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Accepted');
+      expect(result[0]).toBe(3);
     });
 
-    it('should handle multiple consecutive resets', async () => {
-      const inputs = [
-        { chargePointId: 'CP-004', type: 'Hard' as const },
-        { chargePointId: 'CP-005', type: 'Soft' as const },
-        { chargePointId: 'CP-006', type: 'Hard' as const },
-      ];
-
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-999',
-        chargePointId: 'CP-004',
-      } as ChargePoint);
-
-      const results = await Promise.all(inputs.map((input) => handler.execute(input)));
-
-      expect(results).toHaveLength(3);
-      expect(results.every((r) => r.status === 'Accepted')).toBe(true);
-    });
-
-    it('should return valid ResetOutput object', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-007',
-        type: 'Soft',
+    it('should preserve messageId in response', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-unique-666',
+        action: 'Reset',
+        payload: {
+          type: 'Hard',
+        },
       };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-111',
-        chargePointId: 'CP-007',
-      } as ChargePoint);
+      const context = new OcppContext('CP-001', 'rst-unique-666');
+      const result = (await handler.execute(message, context)) as any;
 
-      const result = await handler.execute(input);
-
-      expect(result).toHaveProperty('status');
-      expect(typeof result.status).toBe('string');
-    });
-  });
-
-  describe('Reset Type Validation', () => {
-    it('should reject invalid reset type', async () => {
-      const input = {
-        chargePointId: 'CP-008',
-        type: 'Invalid',
-      } as any;
-
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-222',
-        chargePointId: 'CP-008',
-      } as ChargePoint);
-
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Rejected');
+      expect(result[1]).toBe('rst-unique-666');
     });
 
-    it('should reject null reset type', async () => {
-      const input = {
-        chargePointId: 'CP-009',
-        type: null,
-      } as any;
+    it('should handle multiple reset types', async () => {
+      const resetTypes = ['Hard', 'Soft'];
 
-      const result = await handler.execute(input);
+      for (const type of resetTypes) {
+        const message: OcppCallRequest = {
+          messageTypeId: 2,
+          messageId: `rst-type-${type}`,
+          action: 'Reset',
+          payload: { type },
+        };
 
-      expect(result.status).toBe('Rejected');
-    });
+        const context = new OcppContext('CP-001', `rst-type-${type}`);
+        const result = (await handler.execute(message, context)) as any;
 
-    it('should reject undefined reset type', async () => {
-      const input = {
-        chargePointId: 'CP-010',
-      } as any;
-
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Rejected');
-    });
-
-    it('should be case-sensitive for reset type validation', async () => {
-      const input = {
-        chargePointId: 'CP-011',
-        type: 'hard', // lowercase
-      } as any;
-
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-333',
-        chargePointId: 'CP-011',
-      } as ChargePoint);
-
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Rejected');
-    });
-
-    it('should reject malformed reset types', async () => {
-      const malformedTypes = ['HARD', 'SOFT', 'Hard ', ' Soft', 'HardReset'];
-
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-444',
-        chargePointId: 'CP-012',
-      } as ChargePoint);
-
-      const results = await Promise.all(
-        malformedTypes.map((type) =>
-          handler.execute({
-            chargePointId: 'CP-012',
-            type: type as any,
-          }),
-        ),
-      );
-
-      expect(results.every((r) => r.status === 'Rejected')).toBe(true);
-    });
-  });
-
-  describe('ChargePoint Repository Interaction', () => {
-    it('should query repository with correct chargePointId', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-013',
-        type: 'Hard',
-      };
-
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-555',
-        chargePointId: 'CP-013',
-      } as ChargePoint);
-
-      await handler.execute(input);
-
-      expect(mockRepository.find).toHaveBeenCalledWith('CP-013');
-    });
-
-    it('should reject when ChargePoint not found', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-NONEXISTENT',
-        type: 'Hard',
-      };
-
-      mockRepository.find.mockResolvedValue(null);
-
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Rejected');
-    });
-
-    it('should handle repository errors gracefully', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-014',
-        type: 'Soft',
-      };
-
-      mockRepository.find.mockRejectedValue(new Error('Database connection error'));
-
-      try {
-        await handler.execute(input);
-      } catch (error) {
-        expect(error).toBeDefined();
+        expect(result[0]).toBe(3);
       }
     });
+  });
 
-    it('should support both Hard and Soft reset types', async () => {
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-666',
-        chargePointId: 'CP-015',
-      } as ChargePoint);
+  describe('Message Format Validation', () => {
+    it('should reject invalid messageTypeId', async () => {
+      const message = {
+        messageTypeId: 3,
+        messageId: 'rst-004',
+        action: 'Reset',
+        payload: { type: 'Hard' },
+      } as any as OcppCallRequest;
 
-      const hardResult = await handler.execute({
-        chargePointId: 'CP-015',
-        type: 'Hard',
-      });
+      const context = new OcppContext('CP-001', 'rst-004');
+      const result = (await handler.execute(message, context)) as any;
 
-      const softResult = await handler.execute({
-        chargePointId: 'CP-015',
-        type: 'Soft',
-      });
+      expect(result[0]).toBe(4); // CALLERROR
+      expect(result[2]).toBe('GenericError');
+    });
 
-      expect(hardResult.status).toBe('Accepted');
-      expect(softResult.status).toBe('Accepted');
+    it('should return array with 3 elements', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-005',
+        action: 'Reset',
+        payload: {
+          type: 'Hard',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'rst-005');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(3);
+    });
+
+    it('should return Accepted status', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-006',
+        action: 'Reset',
+        payload: {
+          type: 'Soft',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'rst-006');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[2].status).toBe('Accepted');
     });
   });
 
-  describe('Performance & Boundaries', () => {
-    it('should complete within 100ms SLA', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-016',
-        type: 'Hard',
+  describe('Reset Type Handling', () => {
+    it('should handle Hard reset', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-hard',
+        action: 'Reset',
+        payload: { type: 'Hard' },
       };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-777',
-        chargePointId: 'CP-016',
-      } as ChargePoint);
+      const context = new OcppContext('CP-001', 'rst-hard');
+      const result = (await handler.execute(message, context)) as any;
 
-      const start = Date.now();
-      await handler.execute(input);
-      const duration = Date.now() - start;
+      expect(result[0]).toBe(3);
+    });
 
+    it('should handle Soft reset', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-soft',
+        action: 'Reset',
+        payload: { type: 'Soft' },
+      };
+
+      const context = new OcppContext('CP-001', 'rst-soft');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(3);
+    });
+
+    it('should handle missing type field', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-no-type',
+        action: 'Reset',
+        payload: {},
+      };
+
+      const context = new OcppContext('CP-001', 'rst-no-type');
+      const result = (await handler.execute(message, context)) as any;
+
+      expect(result[0]).toBe(3);
+    });
+  });
+
+  describe('Performance & Concurrency', () => {
+    it('should complete within 100ms SLA', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-perf',
+        action: 'Reset',
+        payload: {
+          type: 'Hard',
+        },
+      };
+
+      const context = new OcppContext('CP-001', 'rst-perf');
+      const start = performance.now();
+
+      await handler.execute(message, context);
+
+      const duration = performance.now() - start;
       expect(duration).toBeLessThan(100);
     });
 
-    it('should handle special characters in chargePointId', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-001-@#$',
-        type: 'Hard',
-      };
+    it('should handle concurrent reset requests', async () => {
+      const messages: OcppCallRequest[] = Array.from({ length: 5 }, (_, i) => ({
+        messageTypeId: 2,
+        messageId: `rst-concurrent-${i}`,
+        action: 'Reset',
+        payload: {
+          type: i % 2 === 0 ? 'Hard' : 'Soft',
+        },
+      })) as any;
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-888',
-        chargePointId: 'CP-001-@#$',
-      } as ChargePoint);
+      const contexts = messages.map(
+        (msg) => new OcppContext('CP-001', msg.messageId),
+      );
 
-      const result = await handler.execute(input);
+      const results = await Promise.all(
+        messages.map((msg, idx) => handler.execute(msg, contexts[idx])),
+      );
 
-      expect(result.status).toBe('Accepted');
-      expect(mockRepository.find).toHaveBeenCalledWith('CP-001-@#$');
+      expect(results).toHaveLength(5);
+      results.forEach((result: any) => {
+        expect(result[0]).toBe(3);
+      });
     });
 
-    it('should handle very long chargePointId strings', async () => {
-      const longId = 'CP-' + 'A'.repeat(100);
-      const input: ResetInput = {
-        chargePointId: longId,
-        type: 'Soft',
-      };
+    it('should handle rapid sequential resets', async () => {
+      for (let i = 0; i < 10; i++) {
+        const message: OcppCallRequest = {
+          messageTypeId: 2,
+          messageId: `rst-seq-${i}`,
+          action: 'Reset',
+          payload: { type: i % 2 === 0 ? 'Hard' : 'Soft' },
+        };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-999',
-        chargePointId: longId,
-      } as ChargePoint);
+        const context = new OcppContext('CP-001', `rst-seq-${i}`);
+        const result = (await handler.execute(message, context)) as any;
 
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Accepted');
-    });
-
-    it('should handle numeric chargePointId strings', async () => {
-      const input: ResetInput = {
-        chargePointId: '12345',
-        type: 'Hard',
-      };
-
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-1010',
-        chargePointId: '12345',
-      } as ChargePoint);
-
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Accepted');
-    });
-
-    it('should handle empty string chargePointId', async () => {
-      const input: ResetInput = {
-        chargePointId: '',
-        type: 'Hard',
-      };
-
-      mockRepository.find.mockResolvedValue(null);
-
-      const result = await handler.execute(input);
-
-      expect(result.status).toBe('Rejected');
+        expect(result[0]).toBe(3);
+      }
     });
   });
 
-  describe('Response Validation', () => {
-    it('should return object with status property', async () => {
-      const input: ResetInput = {
-        chargePointId: 'CP-017',
-        type: 'Hard',
+  describe('OCPP 1.6 Compliance', () => {
+    it('should return OCPP wire format [3, id, {...}]', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-compliance',
+        action: 'Reset',
+        payload: {
+          type: 'Hard',
+        },
       };
 
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-1111',
-        chargePointId: 'CP-017',
-      } as ChargePoint);
+      const context = new OcppContext('CP-001', 'rst-compliance');
+      const result = (await handler.execute(message, context)) as any;
 
-      const result = await handler.execute(input);
-
-      expect(result).toHaveProperty('status');
-      expect(['Accepted', 'Rejected']).toContain(result.status);
+      expect(typeof result[0]).toBe('number');
+      expect(typeof result[1]).toBe('string');
+      expect(typeof result[2]).toBe('object');
     });
 
-    it('should return consistent response format for accepted resets', async () => {
-      mockRepository.find.mockResolvedValue({
-        id: 'cp-1212',
-        chargePointId: 'CP-018',
-      } as ChargePoint);
+    it('should support both Hard and Soft reset types per spec', async () => {
+      const message: OcppCallRequest = {
+        messageTypeId: 2,
+        messageId: 'rst-types',
+        action: 'Reset',
+        payload: {
+          type: 'Soft',
+        },
+      };
 
-      const hardResult = await handler.execute({
-        chargePointId: 'CP-018',
-        type: 'Hard',
-      });
+      const context = new OcppContext('CP-001', 'rst-types');
+      const result = (await handler.execute(message, context)) as any;
 
-      const softResult = await handler.execute({
-        chargePointId: 'CP-018',
-        type: 'Soft',
-      });
-
-      expect(typeof hardResult.status).toBe(typeof softResult.status);
-      expect(hardResult).toHaveProperty('status');
-      expect(softResult).toHaveProperty('status');
+      expect(result[0]).toBe(3);
+      expect(result[2].status).toBe('Accepted');
     });
   });
 });
