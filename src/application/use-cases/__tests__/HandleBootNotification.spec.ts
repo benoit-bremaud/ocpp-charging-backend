@@ -405,8 +405,8 @@ describe('HandleBootNotification', () => {
         messageId: 'boot-017',
         action: 'BootNotification',
         payload: {
-          chargePointVendor: 'Tesla Inc Company Ltd', 
-          chargePointModel: 'Super Model X',          
+          chargePointVendor: 'Tesla Inc Company Ltd',
+          chargePointModel: 'Super Model X',
         },
       };
 
@@ -421,7 +421,6 @@ describe('HandleBootNotification', () => {
       expect(result[0]).toBe(4);
       expect(result[2]).toBe('FormationViolation');
     });
-
 
     it('should handle very long vendor/model strings', async () => {
       const message: OcppCallRequest = {

@@ -1,10 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OcppContext } from '../../domain/value-objects/OcppContext';
 import { OcppSchema } from '../../domain/value-objects/OcppSchema';
-import {
-  BootNotificationMessage,
-  BootNotificationRequest,
-} from '../../domain/ocpp-messages/BootNotification';
+
 import { IChargePointRepository } from '../../domain/repositories/IChargePointRepository';
 import { CHARGE_POINT_REPOSITORY_TOKEN } from '../../infrastructure/tokens';
 import { OcppCallRequest } from '../dto/OcppProtocol';
@@ -48,12 +45,10 @@ export class HandleBootNotification {
       );
     }
 
-    // ✅ Parse into Domain Message (OCPP-First!)
-    const bootNotificationRequest = message.payload as unknown as BootNotificationRequest;
-    const domainMessage = new BootNotificationMessage(bootNotificationRequest);
+    const payload = message.payload as unknown as { chargePointVendor?: string };
 
     this.logger.log(
-      `BootNotification received from chargePointId: ${context.chargePointId}, vendor: ${bootNotificationRequest.chargePointVendor}`,
+      `BootNotification received from chargePointId: ${context.chargePointId}, vendor: ${payload?.chargePointVendor || 'unknown'}`,
     );
 
     // ✅ Apply business logic
