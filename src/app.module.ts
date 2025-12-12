@@ -40,8 +40,8 @@ import { winstonConfig } from './infrastructure/logger/winston.config';
     // Throttling (Rate Limiting) - Global protection
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 1 minute (in milliseconds)
-        limit: 100, // Max 100 requests per minute per IP
+        ttl: Number(process.env.THROTTLE_TTL || '60000'),
+        limit: Number(process.env.THROTTLE_LIMIT || '100'),
       },
     ]),
     WinstonModule.forRoot(winstonConfig),

@@ -3,3 +3,4 @@ dist
 **/*.spec.ts
 **/__tests__/**
 test/
+tests/load/*.js

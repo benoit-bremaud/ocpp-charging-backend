@@ -36,7 +36,7 @@ export class MetricsService {
       .inc();
   }
 
-  getMetrics(): string {
-    return register.metrics();
+  async getMetrics(): Promise<string> {
+    return await register.metrics();
   }
 }

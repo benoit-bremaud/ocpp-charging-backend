@@ -1,5 +1,6 @@
+import { check, group, sleep } from 'k6';
+
 import http from 'k6/http';
-import { check, sleep, group } from 'k6';
 
 export let options = {
   stages: [
@@ -16,10 +17,9 @@ export let options = {
 };
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.mock';
+const BASE_URL = 'http://localhost:3001';
 
 export default function () {
-  const BASE_URL = 'http://localhost:3001'\;
-
   group('Get ChargePoints', function () {
     let response = http.get(BASE_URL + '/charge-points', {
       headers: {
@@ -31,7 +31,20 @@ export default function () {
     check(response, {
       'status is 200': (r) => r.status === 200,
       'response time under 500ms': (r) => r.timings.duration < 500,
+      'response is JSON': (r) => {
+        try {
+          JSON.parse(r.body);
+          return true;
+        } catch {
+          return false;
+        }
+      },
     });
+
+    // Log errors for debugging
+    if (response.status !== 200) {
+      console.log(`❌ Error ${response.status}: ${response.body.substring(0, 100)}`);
+    }
   });
 
   sleep(1);
