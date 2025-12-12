@@ -16,7 +16,7 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger documentation avec config centralisée
+  // Swagger documentation with centralized config
   const swaggerConfig = createSwaggerConfig();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
