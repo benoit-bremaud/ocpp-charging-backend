@@ -37,6 +37,7 @@ export class OcppSchema {
       }
 
       if (!fs.existsSync(schemasDir)) {
+
         console.warn(`[OcppSchema] Schemas directory not found`);
         return schemas;
       }
