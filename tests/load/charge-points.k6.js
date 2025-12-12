@@ -35,13 +35,12 @@ export default function () {
         try {
           JSON.parse(r.body);
           return true;
-        } catch {
+        } catch (e) {
           return false;
         }
       },
     });
 
-    // Log errors for debugging
     if (response.status !== 200) {
       console.log(`❌ Error ${response.status}: ${response.body.substring(0, 100)}`);
     }
