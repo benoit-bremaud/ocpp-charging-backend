@@ -21,19 +21,10 @@ export class MetricsService {
     });
   }
 
-  recordRequestDuration(
-    method: string,
-    route: string,
-    statusCode: number,
-    duration: number,
-  ): void {
-    this.httpRequestDuration
-      .labels(method, route, statusCode.toString())
-      .observe(duration);
+  recordRequestDuration(method: string, route: string, statusCode: number, duration: number): void {
+    this.httpRequestDuration.labels(method, route, statusCode.toString()).observe(duration);
 
-    this.httpRequestTotal
-      .labels(method, route, statusCode.toString())
-      .inc();
+    this.httpRequestTotal.labels(method, route, statusCode.toString()).inc();
   }
 
   async getMetrics(): Promise<string> {

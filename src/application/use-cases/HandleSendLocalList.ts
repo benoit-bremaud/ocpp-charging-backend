@@ -17,7 +17,6 @@ interface SendLocalListPayload {
   updateType?: 'Full' | 'Differential';
 }
 
-
 type OcppCallResult = [number, string, Record<string, unknown>];
 type OcppCallError = [number, string, string, string];
 type OcppResponse = OcppCallResult | OcppCallError;
