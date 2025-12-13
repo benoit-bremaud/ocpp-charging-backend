@@ -31,7 +31,7 @@ export class OcppSchema {
     try {
       // Essayer d'abord depuis src/, puis depuis tests/
       let schemasDir = path.resolve(__dirname, '../../../src/domain/value-objects/schemas');
-      
+
       if (!fs.existsSync(schemasDir)) {
         schemasDir = path.resolve(__dirname, '../../../../tests/e2e/schemas/json');
       }

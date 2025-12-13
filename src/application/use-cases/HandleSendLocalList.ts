@@ -1,6 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OcppContext } from '../../domain/value-objects/OcppContext';
+
 import { OcppCallRequest } from '../dto/OcppProtocol';
+import { OcppContext } from '../../domain/value-objects/OcppContext';
+
+interface LocalAuthEntry {
+  idTag: string;
+  idTokenInfo?: {
+    status: string;
+    expiryDate?: string;
+    parentIdTag?: string;
+  };
+}
+interface SendLocalListPayload {
+  listVersion?: number;
+  localAuthorizationList?: LocalAuthEntry[];
+  updateType?: 'Full' | 'Differential';
+}
 
 type OcppCallResult = [number, string, Record<string, unknown>];
 type OcppCallError = [number, string, string, string];
@@ -15,11 +30,7 @@ export class HandleSendLocalList {
       return [4, message.messageId, 'GenericError', 'Invalid messageTypeId'];
     }
 
-    const payload = message.payload as {
-      listVersion?: number;
-      localAuthorizationList?: any[];
-      updateType?: string;
-    };
+    const payload = message.payload as SendLocalListPayload;
 
     this.logger.debug(`[${context.chargePointId}] SendLocalList - Version: ${payload.listVersion}`);
 
