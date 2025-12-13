@@ -6,12 +6,18 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 @Module({
   imports: [
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'ocpp-secret-key-change-in-prod',
-      signOptions: { expiresIn: '24h' },
-    }),
+    (() => {
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET environment variable must be set');
+      }
+      return JwtModule.register({
+        secret: jwtSecret,
+        signOptions: { expiresIn: '24h' },
+      });
+    })(),
   ],
   providers: [JwtStrategy],
-  exports: [JwtModule],
+  exports: [JwtModule, PassportModule],
 })
 export class AuthModule {}

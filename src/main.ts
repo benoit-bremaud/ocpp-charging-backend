@@ -1,36 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { createSwaggerConfig } from './infrastructure/swagger.config';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('APP_PORT', 3000);
 
-  // Validation globale
+  app.enableCors();
+
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
       transform: true,
       disableErrorMessages: process.env.NODE_ENV === 'production',
     }),
   );
 
-  // Swagger documentation with centralized config
-  const swaggerConfig = createSwaggerConfig();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
-
-  // CORS
-  app.enableCors();
-
-  // Démarrage
-  const port = parseInt(process.env.APP_PORT || '3001', 10);
   await app.listen(port);
-
-  console.log(`🚀 Server running on port ${port}`);
-  console.log(`📚 Swagger docs available at http://localhost:${port}/api/docs`);
+  console.log(`✅ Application listening on port ${port}`);
 }
-
 bootstrap();
