@@ -37,6 +37,11 @@ import { winstonConfig } from './infrastructure/logger/winston.config';
 
 @Module({
   imports: [
+    WinstonModule.forRoot(winstonConfig),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     // Throttling (Rate Limiting) - Global protection
     ThrottlerModule.forRoot([
       {
@@ -44,11 +49,7 @@ import { winstonConfig } from './infrastructure/logger/winston.config';
         limit: 100, // Max 100 requests per minute per IP
       },
     ]),
-    WinstonModule.forRoot(winstonConfig),
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
+
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => getTypeOrmConfig(configService),

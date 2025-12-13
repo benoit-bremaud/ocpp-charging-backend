@@ -1,23 +1,31 @@
-import { WinstonModuleOptions } from 'nest-winston';
 import * as winston from 'winston';
 
-/**
- * Winston logger configuration
- * Provides structured logging with colorized console output in development
- * and JSON format in production
- */
-export const winstonConfig: WinstonModuleOptions = {
+export const winstonConfig = {
   transports: [
+    // Console transport (pour dev et prod)
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.ms(),
-        winston.format.colorize({ all: true }),
-        winston.format.printf(({ timestamp, level, message, ms, context }) => {
-          const ctx = context ? `[${context}]` : '';
-          return `${timestamp} [${level}] ${ctx} ${message} ${ms}`;
-        }),
+        winston.format.colorize(),
+        winston.format.printf(
+          ({ timestamp, level, message, context }) =>
+            `[${timestamp}] [${context}] ${level}: ${message}`,
+        ),
       ),
     }),
+    // File transport (optionnel - pour prod)
+    ...(process.env.NODE_ENV === 'production'
+      ? [
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+            format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+          }),
+          new winston.transports.File({
+            filename: 'logs/combined.log',
+            format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+          }),
+        ]
+      : []),
   ],
 };
